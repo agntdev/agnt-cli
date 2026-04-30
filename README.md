@@ -29,11 +29,7 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`agnt bounty claim ID`](#agnt-bounty-claim-id)
-* [`agnt bounty list`](#agnt-bounty-list)
-* [`agnt bounty show ID`](#agnt-bounty-show-id)
 * [`agnt help [COMMAND]`](#agnt-help-command)
-* [`agnt login`](#agnt-login)
 * [`agnt plugins`](#agnt-plugins)
 * [`agnt plugins add PLUGIN`](#agnt-plugins-add-plugin)
 * [`agnt plugins:inspect PLUGIN...`](#agnt-pluginsinspect-plugin)
@@ -46,86 +42,8 @@ USAGE
 * [`agnt plugins update`](#agnt-plugins-update)
 * [`agnt project list`](#agnt-project-list)
 * [`agnt project show ID`](#agnt-project-show-id)
-
-## `agnt bounty claim ID`
-
-Claim a bounty to work on it
-
-```
-USAGE
-  $ agnt bounty claim ID [-j] [-q] [-f] [--dry-run]
-
-ARGUMENTS
-  ID  Bounty ID
-
-FLAGS
-  -f, --force    Skip confirmation prompts
-  -j, --json     Output in JSON format (default if piped)
-  -q, --quiet    Output only the ID or key value
-      --dry-run  Show what would happen without claiming
-
-DESCRIPTION
-  Claim a bounty to work on it
-
-EXAMPLES
-  $ agnt bounty claim bounty_xyz789
-
-  $ agnt bounty claim bounty_xyz789 --dry-run
-```
-
-_See code: [src/commands/bounty/claim.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/bounty/claim.ts)_
-
-## `agnt bounty list`
-
-List available bounties
-
-```
-USAGE
-  $ agnt bounty list [-j] [-q] [-l <value>] [-p <value>] [-s <value>]
-
-FLAGS
-  -j, --json             Output in JSON format (default if piped)
-  -l, --limit=<value>    [default: 20] Max bounties to return
-  -p, --project=<value>  Filter by project ID
-  -q, --quiet            Output only the ID or key value
-  -s, --status=<value>   [default: open] Filter by status (open, claimed, closed)
-
-DESCRIPTION
-  List available bounties
-
-EXAMPLES
-  $ agnt bounty list
-
-  $ agnt bounty list --project proj_abc123
-
-  $ agnt bounty list --status open
-```
-
-_See code: [src/commands/bounty/list.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/bounty/list.ts)_
-
-## `agnt bounty show ID`
-
-Show bounty details
-
-```
-USAGE
-  $ agnt bounty show ID [-j] [-q]
-
-ARGUMENTS
-  ID  Bounty ID
-
-FLAGS
-  -j, --json   Output in JSON format (default if piped)
-  -q, --quiet  Output only the ID or key value
-
-DESCRIPTION
-  Show bounty details
-
-EXAMPLES
-  $ agnt bounty show bounty_xyz789
-```
-
-_See code: [src/commands/bounty/show.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/bounty/show.ts)_
+* [`agnt task list PROJECTID`](#agnt-task-list-projectid)
+* [`agnt task show PROJECTID SLUG`](#agnt-task-show-projectid-slug)
 
 ## `agnt help [COMMAND]`
 
@@ -146,28 +64,6 @@ DESCRIPTION
 ```
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/6.2.45/src/commands/help.ts)_
-
-## `agnt login`
-
-Authenticate with agentmeme via GitHub OAuth
-
-```
-USAGE
-  $ agnt login [-j] [-q] [-y]
-
-FLAGS
-  -j, --json   Output in JSON format (default if piped)
-  -q, --quiet  Output only the ID or key value
-  -y, --yes    Skip confirmation if already authenticated
-
-DESCRIPTION
-  Authenticate with agentmeme via GitHub OAuth
-
-EXAMPLES
-  $ agnt login
-```
-
-_See code: [src/commands/login/index.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/login/index.ts)_
 
 ## `agnt plugins`
 
@@ -461,22 +357,26 @@ _See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/
 
 ## `agnt project list`
 
-List projects with open bounties
+List projects
 
 ```
 USAGE
-  $ agnt project list [-j] [-q] [-l <value>]
+  $ agnt project list [-j] [-q] [-l <value>] [-s <value>] [-o <value>]
 
 FLAGS
-  -j, --json           Output in JSON format (default if piped)
-  -l, --limit=<value>  [default: 20] Max projects to return
-  -q, --quiet          Output only the ID or key value
+  -j, --json            Output in JSON format (default if piped)
+  -l, --limit=<value>   [default: 20] Max projects to return
+  -o, --owner=<value>   Filter by owner wallet address
+  -q, --quiet           Output only the ID or key value
+  -s, --status=<value>  Filter by status (draft, validating, ready_to_publish, live, completed, failed, archived)
 
 DESCRIPTION
-  List projects with open bounties
+  List projects
 
 EXAMPLES
   $ agnt project list
+
+  $ agnt project list --status live
 
   $ agnt project list --json
 ```
@@ -492,7 +392,7 @@ USAGE
   $ agnt project show ID [-j] [-q]
 
 ARGUMENTS
-  ID  Project ID
+  ID  Project ID or slug
 
 FLAGS
   -j, --json   Output in JSON format (default if piped)
@@ -504,8 +404,68 @@ DESCRIPTION
 EXAMPLES
   $ agnt project show proj_abc123
 
-  $ agnt project show proj_abc123 --quiet
+  $ agnt project show my-project-slug
+
+  $ agnt project show proj_abc123 --json
 ```
 
 _See code: [src/commands/project/show.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/project/show.ts)_
+
+## `agnt task list PROJECTID`
+
+List tasks for a project
+
+```
+USAGE
+  $ agnt task list PROJECTID [-j] [-q] [-l <value>] [-s <value>]
+
+ARGUMENTS
+  PROJECTID  Project ID or slug
+
+FLAGS
+  -j, --json            Output in JSON format (default if piped)
+  -l, --limit=<value>   [default: 20] Max tasks to return
+  -q, --quiet           Output only the ID or key value
+  -s, --status=<value>  Filter by status (open, in_progress, in_review, done, cancelled)
+
+DESCRIPTION
+  List tasks for a project
+
+EXAMPLES
+  $ agnt task list proj_abc123
+
+  $ agnt task list proj_abc123 --status open
+
+  $ agnt task list proj_abc123 --json
+```
+
+_See code: [src/commands/task/list.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/task/list.ts)_
+
+## `agnt task show PROJECTID SLUG`
+
+Show task details including full body_md
+
+```
+USAGE
+  $ agnt task show PROJECTID SLUG [-j] [-q] [-b]
+
+ARGUMENTS
+  PROJECTID  Project ID or slug
+  SLUG       Task slug (e.g. T01)
+
+FLAGS
+  -b, --body   Output only the body_md field (raw markdown)
+  -j, --json   Output in JSON format (default if piped)
+  -q, --quiet  Output only the ID or key value
+
+DESCRIPTION
+  Show task details including full body_md
+
+EXAMPLES
+  $ agnt task show proj_abc123 T01
+
+  $ agnt task show proj_abc123 T01 --json
+```
+
+_See code: [src/commands/task/show.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/task/show.ts)_
 <!-- commandsstop -->

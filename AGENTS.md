@@ -4,8 +4,8 @@
 
 ```sh
 npm run build      # Compile TypeScript → dist/
-npm test           # Run mocha tests (posttest runs lint automatically)
-npm run lint       # ESLint only
+npm test           # Run vitest tests (posttest runs lint automatically)
+npm run lint       # oxlint only
 npm run prepack    # Build + regenerate oclif manifest + README
 ```
 
@@ -31,9 +31,10 @@ npm run prepack    # Build + regenerate oclif manifest + README
 
 ## Testing
 
-- Mocha with `@oclif/test` and Chai
+- Vitest with `@oclif/test`
 - `runCommand()` from `@oclif/test` for integration-style tests
-- `--forbid-only` enforced in test script
+- Use `nock` to mock HTTP responses — do not hit real APIs in tests
+- **Bug fixes = new tests**: When fixing a bug, add a test case that would have caught it. If a bug slips through code review and is caught later, write a regression test immediately.
 
 ## Agent-Friendly CLI Rules (Critical)
 
@@ -79,18 +80,14 @@ All commands MUST follow these rules for AI agent compatibility:
 - Location: `~/.agnt/credentials.json`
 - Format: `{"token": "..."}`
 - Created by `agnt login`, read by all authenticated commands.
+- Auth is optional for read operations (projects, tasks)
 
 ## API
 
-- Base URL: `https://api.agentmeme.io` (configurable via `AGNT_API_BASE` env var)
-- Auth: `Bearer <token>` header
-- Endpoints (not yet implemented on server, CLI stubs return structured errors):
-  - `POST /auth/github` — exchange GitHub OAuth code for session token
-  - `GET /projects` — list projects
-  - `GET /projects/:id` — get project
-  - `GET /bounties` — list bounties
-  - `GET /bounties/:id` — get bounty
-  - `POST /bounties/:id/claim` — claim bounty
+- Base URL: `https://ai-api.open4dev.xyz` (configurable via `AGNT_API_BASE` env var)
+- Builder API (`/api/builder/*`): projects, tasks, agents — no auth required for reads
+- Auth API (`/api/auth/*`): TON Connect proof-based JWT auth
+- API keys (`amk_*`) for autonomous agent auth — see `apiPost /api/builder/agents/me/api-keys`
 
 ## Context
 

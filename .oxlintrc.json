@@ -8,7 +8,6 @@
     "jsdoc"
   ],
   "jsPlugins": [
-    "eslint-plugin-mocha",
     "eslint-plugin-perfectionist"
   ],
   "categories": {
@@ -190,24 +189,6 @@
     "valid-typeof": "error",
     "no-array-constructor": "error",
     "no-unused-expressions": "error",
-    "mocha/handle-done-callback": "error",
-    "mocha/max-top-level-suites": [
-      "error",
-      {
-        "limit": 1
-      }
-    ],
-    "mocha/no-exclusive-tests": "warn",
-    "mocha/no-exports": "error",
-    "mocha/no-global-tests": "error",
-    "mocha/no-nested-tests": "error",
-    "mocha/no-pending-tests": "warn",
-    "mocha/no-return-and-callback": "error",
-    "mocha/no-sibling-hooks": "error",
-    "mocha/no-skipped-tests": "warn",
-    "mocha/no-top-level-hooks": "warn",
-    "mocha/no-empty-description": "error",
-    "mocha/consistent-spacing-between-blocks": "error",
     "unicorn/catch-error-name": "error",
     "unicorn/consistent-empty-array-spread": "error",
     "unicorn/consistent-existence-index-check": "error",
@@ -750,19 +731,6 @@
         "es2026": true,
         "shared-node-browser": true
       }
-    },
-    {
-      "files": [
-        "test/**/*.ts"
-      ],
-      "rules": {
-        "mocha/consistent-spacing-between-blocks": "off",
-        "mocha/max-top-level-suites": "off",
-        "no-unused-expressions": "off"
-      },
-      "jsPlugins": [
-        "eslint-plugin-mocha"
-      ]
     }
   ]
 }

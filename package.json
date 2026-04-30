@@ -14,7 +14,10 @@
   },
   "devDependencies": {
     "@oclif/test": "^4",
+    "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^24",
+    "eslint-plugin-perfectionist": "^5.9.0",
+    "nock": "^14.0.13",
     "oclif": "^4",
     "oxfmt": "^0.47.0",
     "oxlint": "^1.62.0",
