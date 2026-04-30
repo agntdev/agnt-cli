@@ -13,24 +13,21 @@
     "@oclif/plugin-plugins": "^5"
   },
   "devDependencies": {
-    "@eslint/compat": "^1",
-    "@oclif/prettier-config": "^0.2.1",
     "@oclif/test": "^4",
-    "@types/chai": "^4",
+    "@types/chai": "^5",
     "@types/mocha": "^10",
-    "@types/node": "^18",
-    "chai": "^4",
-    "eslint": "^9",
-    "eslint-config-oclif": "^6",
-    "eslint-config-prettier": "^10",
+    "@types/node": "^24",
+    "chai": "^6",
     "mocha": "^11",
     "oclif": "^4",
-    "shx": "^0.3.3",
+    "oxfmt": "^0.47.0",
+    "oxlint": "^1.62.0",
+    "shx": "^0.4.0",
     "ts-node": "^10",
-    "typescript": "^5"
+    "typescript": "^6"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=24.0.0"
   },
   "files": [
     "./bin",
@@ -52,17 +49,12 @@
       "@oclif/plugin-help",
       "@oclif/plugin-plugins"
     ],
-    "topicSeparator": " ",
-    "topics": {
-      "hello": {
-        "description": "Say hello to the world and others"
-      }
-    }
+    "topicSeparator": " "
   },
   "repository": "tongateway/agnt-cli",
   "scripts": {
     "build": "shx rm -rf dist && tsc -b",
-    "lint": "eslint",
+    "lint": "oxlint",
     "postpack": "shx rm -f oclif.manifest.json",
     "posttest": "npm run lint",
     "prepack": "oclif manifest && oclif readme",
