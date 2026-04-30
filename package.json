@@ -14,17 +14,14 @@
   },
   "devDependencies": {
     "@oclif/test": "^4",
-    "@types/chai": "^5",
-    "@types/mocha": "^10",
     "@types/node": "^24",
-    "chai": "^6",
-    "mocha": "^11",
     "oclif": "^4",
     "oxfmt": "^0.47.0",
     "oxlint": "^1.62.0",
     "shx": "^0.4.0",
     "ts-node": "^10",
-    "typescript": "^6"
+    "typescript": "^6",
+    "vitest": "^3"
   },
   "engines": {
     "node": ">=24.0.0"
@@ -58,7 +55,7 @@
     "postpack": "shx rm -f oclif.manifest.json",
     "posttest": "npm run lint",
     "prepack": "oclif manifest && oclif readme",
-    "test": "mocha --forbid-only \"test/**/*.test.ts\"",
+    "test": "vitest run",
     "version": "oclif readme && git add README.md"
   },
   "types": "dist/index.d.ts"

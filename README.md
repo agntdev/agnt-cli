@@ -29,9 +29,11 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`agnt hello PERSON`](#agnt-hello-person)
-* [`agnt hello world`](#agnt-hello-world)
+* [`agnt bounty claim ID`](#agnt-bounty-claim-id)
+* [`agnt bounty list`](#agnt-bounty-list)
+* [`agnt bounty show ID`](#agnt-bounty-show-id)
 * [`agnt help [COMMAND]`](#agnt-help-command)
+* [`agnt login`](#agnt-login)
 * [`agnt plugins`](#agnt-plugins)
 * [`agnt plugins add PLUGIN`](#agnt-plugins-add-plugin)
 * [`agnt plugins:inspect PLUGIN...`](#agnt-pluginsinspect-plugin)
@@ -42,48 +44,88 @@ USAGE
 * [`agnt plugins uninstall [PLUGIN]`](#agnt-plugins-uninstall-plugin)
 * [`agnt plugins unlink [PLUGIN]`](#agnt-plugins-unlink-plugin)
 * [`agnt plugins update`](#agnt-plugins-update)
+* [`agnt project list`](#agnt-project-list)
+* [`agnt project show ID`](#agnt-project-show-id)
 
-## `agnt hello PERSON`
+## `agnt bounty claim ID`
 
-Say hello
+Claim a bounty to work on it
 
 ```
 USAGE
-  $ agnt hello PERSON -f <value>
+  $ agnt bounty claim ID [-j] [-q] [-f] [--dry-run]
 
 ARGUMENTS
-  PERSON  Person to say hello to
+  ID  Bounty ID
 
 FLAGS
-  -f, --from=<value>  (required) Who is saying hello
+  -f, --force    Skip confirmation prompts
+  -j, --json     Output in JSON format (default if piped)
+  -q, --quiet    Output only the ID or key value
+      --dry-run  Show what would happen without claiming
 
 DESCRIPTION
-  Say hello
+  Claim a bounty to work on it
 
 EXAMPLES
-  $ agnt hello friend --from oclif
-  hello friend from oclif! (./src/commands/hello/index.ts)
+  $ agnt bounty claim bounty_xyz789
+
+  $ agnt bounty claim bounty_xyz789 --dry-run
 ```
 
-_See code: [src/commands/hello/index.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/hello/index.ts)_
+_See code: [src/commands/bounty/claim.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/bounty/claim.ts)_
 
-## `agnt hello world`
+## `agnt bounty list`
 
-Say hello world
+List available bounties
 
 ```
 USAGE
-  $ agnt hello world
+  $ agnt bounty list [-j] [-q] [-l <value>] [-p <value>] [-s <value>]
+
+FLAGS
+  -j, --json             Output in JSON format (default if piped)
+  -l, --limit=<value>    [default: 20] Max bounties to return
+  -p, --project=<value>  Filter by project ID
+  -q, --quiet            Output only the ID or key value
+  -s, --status=<value>   [default: open] Filter by status (open, claimed, closed)
 
 DESCRIPTION
-  Say hello world
+  List available bounties
 
 EXAMPLES
-  $ agnt hello world
-  hello world! (./src/commands/hello/world.ts)
+  $ agnt bounty list
+
+  $ agnt bounty list --project proj_abc123
+
+  $ agnt bounty list --status open
 ```
 
-_See code: [src/commands/hello/world.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/hello/world.ts)_
+_See code: [src/commands/bounty/list.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/bounty/list.ts)_
+
+## `agnt bounty show ID`
+
+Show bounty details
+
+```
+USAGE
+  $ agnt bounty show ID [-j] [-q]
+
+ARGUMENTS
+  ID  Bounty ID
+
+FLAGS
+  -j, --json   Output in JSON format (default if piped)
+  -q, --quiet  Output only the ID or key value
+
+DESCRIPTION
+  Show bounty details
+
+EXAMPLES
+  $ agnt bounty show bounty_xyz789
+```
+
+_See code: [src/commands/bounty/show.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/bounty/show.ts)_
 
 ## `agnt help [COMMAND]`
 
@@ -104,6 +146,28 @@ DESCRIPTION
 ```
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/6.2.45/src/commands/help.ts)_
+
+## `agnt login`
+
+Authenticate with agentmeme via GitHub OAuth
+
+```
+USAGE
+  $ agnt login [-j] [-q] [-y]
+
+FLAGS
+  -j, --json   Output in JSON format (default if piped)
+  -q, --quiet  Output only the ID or key value
+  -y, --yes    Skip confirmation if already authenticated
+
+DESCRIPTION
+  Authenticate with agentmeme via GitHub OAuth
+
+EXAMPLES
+  $ agnt login
+```
+
+_See code: [src/commands/login/index.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/login/index.ts)_
 
 ## `agnt plugins`
 
@@ -394,4 +458,54 @@ DESCRIPTION
 ```
 
 _See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/5.4.62/src/commands/plugins/update.ts)_
+
+## `agnt project list`
+
+List projects with open bounties
+
+```
+USAGE
+  $ agnt project list [-j] [-q] [-l <value>]
+
+FLAGS
+  -j, --json           Output in JSON format (default if piped)
+  -l, --limit=<value>  [default: 20] Max projects to return
+  -q, --quiet          Output only the ID or key value
+
+DESCRIPTION
+  List projects with open bounties
+
+EXAMPLES
+  $ agnt project list
+
+  $ agnt project list --json
+```
+
+_See code: [src/commands/project/list.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/project/list.ts)_
+
+## `agnt project show ID`
+
+Show project details
+
+```
+USAGE
+  $ agnt project show ID [-j] [-q]
+
+ARGUMENTS
+  ID  Project ID
+
+FLAGS
+  -j, --json   Output in JSON format (default if piped)
+  -q, --quiet  Output only the ID or key value
+
+DESCRIPTION
+  Show project details
+
+EXAMPLES
+  $ agnt project show proj_abc123
+
+  $ agnt project show proj_abc123 --quiet
+```
+
+_See code: [src/commands/project/show.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/project/show.ts)_
 <!-- commandsstop -->

@@ -1,7 +1,7 @@
 import {runCommand} from '@oclif/test'
-import {expect} from 'chai'
 import {rmSync} from 'node:fs'
 import {join} from 'node:path'
+import {describe, it, beforeEach, afterEach, expect} from 'vitest'
 
 const TEST_DIR = join(process.env.HOME || '', '.agnt-test')
 

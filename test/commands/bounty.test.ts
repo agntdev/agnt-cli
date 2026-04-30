@@ -1,7 +1,7 @@
 import {runCommand} from '@oclif/test'
-import {expect} from 'chai'
 import {rmSync} from 'node:fs'
 import {join} from 'node:path'
+import {describe, it, beforeEach, afterEach, expect} from 'vitest'
 
 const TEST_DIR = join(process.env.HOME || '', '.agnt-test')
 
@@ -38,7 +38,7 @@ describe('bounty', () => {
 
     it('dry-run outputs structured JSON without auth', async () => {
       const {stdout, error} = await runCommand(['bounty', 'claim', 'test123', '--dry-run', '--json'])
-      expect(error).to.be.undefined
+      expect(error).toBeUndefined()
       const parsed = JSON.parse(stdout)
       expect(parsed.action).to.eq('claim')
       expect(parsed.bounty_id).to.eq('test123')
