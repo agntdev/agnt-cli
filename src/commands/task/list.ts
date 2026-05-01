@@ -1,27 +1,8 @@
 import {Args, Command, Flags} from '@oclif/core'
 
-import {apiGet} from '../../lib/api.js'
 import {outputFlags} from '../../lib/flags.js'
 import {outputJSON} from '../../lib/output.js'
-
-interface Task {
-  id: string
-  project_id: string
-  slug: string
-  title: string
-  body_md: null | string
-  reward_amount: string
-  difficulty: null | string
-  estimated_hours: null | string
-  tags: string[]
-  status: string
-  github_issue_number: null | number
-  github_issue_url: null | string
-  solved_by_agent_id: null | string
-  solved_by_pr_id: null | string
-  first_pr_at: null | string
-  created_at: string
-}
+import {client} from '../../lib/client.js'
 
 export default class TaskList extends Command {
   static description = 'List tasks for a project'
@@ -56,16 +37,17 @@ export default class TaskList extends Command {
       this.error('limit must be at least 1', {exit: 2})
     }
 
-    const params = new URLSearchParams({limit: String(flags.limit)})
-    if (flags.status) params.set('status', flags.status)
+    const {data, error} = await client.GET('/builder/projects/{id}/tasks', {
+      params: {
+        path: {id: args.projectId},
+        query: {limit: flags.limit, status: flags.status as 'cancelled' | 'done' | 'in_progress' | 'in_review' | 'open' | undefined},
+      },
+    })
 
-    try {
-      const data = await apiGet(`/api/builder/projects/${args.projectId}/tasks?${params}`) as {tasks?: Task[]}
-      const tasks = data.tasks ?? []
-      outputJSON({tasks}, flags.json, flags.quiet)
-    } catch (error) {
-      const e = error as {message?: string}
-      this.error(e.message ?? 'Failed to list tasks', {exit: 1})
+    if (error) {
+      this.error(`API error: ${error.error ?? 'Unknown'}`, {exit: 1})
     }
+
+    outputJSON({tasks: data?.tasks ?? []}, flags.json, flags.quiet)
   }
 }

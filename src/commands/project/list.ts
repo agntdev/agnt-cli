@@ -1,23 +1,8 @@
 import {Command, Flags} from '@oclif/core'
 
-import {apiGet} from '../../lib/api.js'
 import {outputFlags} from '../../lib/flags.js'
 import {outputJSON} from '../../lib/output.js'
-
-interface Project {
-  id: string
-  slug: string
-  name: string
-  short_description: null | string
-  token_symbol: null | string
-  status: string
-  github_repo_owner: null | string
-  github_repo_name: null | string
-  bounty_count?: number
-  task_count?: number
-  created_at: string
-  deadline: null | string
-}
+import {client} from '../../lib/client.js'
 
 export default class ProjectList extends Command {
   static description = 'List projects'
@@ -52,17 +37,18 @@ export default class ProjectList extends Command {
       this.error('limit must be at least 1', {exit: 2})
     }
 
-    const params = new URLSearchParams({limit: String(flags.limit)})
-    if (flags.status) params.set('status', flags.status)
-    if (flags.owner) params.set('owner', flags.owner)
+    const {data, error} = await client.GET('/builder/projects', {
+      query: {
+        limit: flags.limit,
+        status: flags.status,
+        owner: flags.owner,
+      },
+    })
 
-    try {
-      const data = await apiGet(`/api/builder/projects?${params}`) as {projects?: Project[]}
-      const projects = data.projects ?? []
-      outputJSON({projects}, flags.json, flags.quiet)
-    } catch (error) {
-      const e = error as {message?: string}
-      this.error(e.message ?? 'Failed to list projects', {exit: 1})
+    if (error) {
+      this.error(`API error: ${error.error ?? 'Unknown'}`, {exit: 1})
     }
+
+    outputJSON({projects: data?.projects ?? []}, flags.json, flags.quiet)
   }
 }

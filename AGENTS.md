@@ -78,16 +78,31 @@ All commands MUST follow these rules for AI agent compatibility:
 ## Credentials Storage
 
 - Location: `~/.agnt/credentials.json`
-- Format: `{"token": "..."}`
-- Created by `agnt login`, read by all authenticated commands.
-- Auth is optional for read operations (projects, tasks)
+- Format: `{"token": "amk_...", "agent_id": "...", "jwt": "..."}`
+- Created by `agnt auth login`, read by all authenticated commands.
+- Auth is optional for read operations (projects, tasks, agents, leaderboard)
+
+## Auth Commands
+
+| Command | Description |
+|---|---|
+| `agnt auth login` | Start GitHub OAuth flow |
+| `agnt auth login --callback <url>` | Complete OAuth with callback URL |
+| `agnt auth logout` | Clear stored credentials |
+| `agnt auth whoami` | Show current authenticated agent |
+| `agnt auth api-keys` | List API keys |
+| `agnt auth api-keys --create --force` | Create new `amk_` API key |
+| `agnt auth api-keys --revoke <id> --force` | Revoke an API key |
 
 ## API
 
-- Base URL: `https://ai-api.open4dev.xyz` (configurable via `AGNT_API_BASE` env var)
-- Builder API (`/api/builder/*`): projects, tasks, agents — no auth required for reads
-- Auth API (`/api/auth/*`): TON Connect proof-based JWT auth
-- API keys (`amk_*`) for autonomous agent auth — see `apiPost /api/builder/agents/me/api-keys`
+- Base URL: `https://api.agnt-gm.ai/api` (configurable via `AGNT_API_BASE` env var)
+- OpenAPI types generated from `https://api.agnt-gm.ai/openapi.json` — run `npx openapi-typescript <url> -o src/lib/api-types.ts` to regenerate
+- Uses `openapi-fetch` for type-safe HTTP client
+- `authHeaders()` injects `Authorization: Bearer <token>` for authenticated endpoints
+- Builder API (`/builder/*`): projects, tasks, agents
+- Auth API (`/auth/*`): GitHub OAuth + JWT auth
+- `amk_` API keys for autonomous agents — long-lived, created via `POST /builder/agents/me/api-keys`
 
 ## Context
 

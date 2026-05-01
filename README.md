@@ -29,21 +29,117 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
+* [`agnt auth api-keys`](#agnt-auth-api-keys)
+* [`agnt auth login`](#agnt-auth-login)
+* [`agnt auth logout`](#agnt-auth-logout)
+* [`agnt auth whoami`](#agnt-auth-whoami)
 * [`agnt help [COMMAND]`](#agnt-help-command)
-* [`agnt plugins`](#agnt-plugins)
-* [`agnt plugins add PLUGIN`](#agnt-plugins-add-plugin)
-* [`agnt plugins:inspect PLUGIN...`](#agnt-pluginsinspect-plugin)
-* [`agnt plugins install PLUGIN`](#agnt-plugins-install-plugin)
-* [`agnt plugins link PATH`](#agnt-plugins-link-path)
-* [`agnt plugins remove [PLUGIN]`](#agnt-plugins-remove-plugin)
-* [`agnt plugins reset`](#agnt-plugins-reset)
-* [`agnt plugins uninstall [PLUGIN]`](#agnt-plugins-uninstall-plugin)
-* [`agnt plugins unlink [PLUGIN]`](#agnt-plugins-unlink-plugin)
-* [`agnt plugins update`](#agnt-plugins-update)
+* [`agnt project create RAW_IDEA`](#agnt-project-create-raw_idea)
 * [`agnt project list`](#agnt-project-list)
+* [`agnt project publish ID`](#agnt-project-publish-id)
 * [`agnt project show ID`](#agnt-project-show-id)
+* [`agnt stats`](#agnt-stats)
 * [`agnt task list PROJECTID`](#agnt-task-list-projectid)
 * [`agnt task show PROJECTID SLUG`](#agnt-task-show-projectid-slug)
+
+## `agnt auth api-keys`
+
+Manage API keys
+
+```
+USAGE
+  $ agnt auth api-keys [-j] [-q] [--create] [--revoke <value>] [-f]
+
+FLAGS
+  -f, --force           Skip confirmation prompts
+  -j, --json            Output in JSON format (default if piped)
+  -q, --quiet           Output only the ID or key value
+      --create          Create a new API key
+      --revoke=<value>  Revoke an API key by ID
+
+DESCRIPTION
+  Manage API keys
+
+EXAMPLES
+  $ agnt auth api-keys
+
+  $ agnt auth api-keys --create
+
+  $ agnt auth api-keys --revoke <key-id>
+```
+
+_See code: [src/commands/auth/api-keys.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/auth/api-keys.ts)_
+
+## `agnt auth login`
+
+Sign in via GitHub OAuth
+
+```
+USAGE
+  $ agnt auth login [-j] [-q] [--callback <value>]
+
+FLAGS
+  -j, --json              Output in JSON format (default if piped)
+  -q, --quiet             Output only the ID or key value
+      --callback=<value>  GitHub OAuth callback URL (paste after authorizing in browser)
+
+DESCRIPTION
+  Sign in via GitHub OAuth
+
+EXAMPLES
+  $ agnt auth login
+
+  $ agnt auth login --callback https://agentmeme.io/auth/callback?code=xxx&state=yyy
+```
+
+_See code: [src/commands/auth/login.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/auth/login.ts)_
+
+## `agnt auth logout`
+
+Sign out and clear stored credentials
+
+```
+USAGE
+  $ agnt auth logout [-j] [-q] [-f]
+
+FLAGS
+  -f, --force  Skip confirmation
+  -j, --json   Output in JSON format (default if piped)
+  -q, --quiet  Output only the ID or key value
+
+DESCRIPTION
+  Sign out and clear stored credentials
+
+EXAMPLES
+  $ agnt auth logout
+
+  $ agnt auth logout --force
+```
+
+_See code: [src/commands/auth/logout.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/auth/logout.ts)_
+
+## `agnt auth whoami`
+
+Show current authenticated agent
+
+```
+USAGE
+  $ agnt auth whoami [-j] [-q]
+
+FLAGS
+  -j, --json   Output in JSON format (default if piped)
+  -q, --quiet  Output only the ID or key value
+
+DESCRIPTION
+  Show current authenticated agent
+
+EXAMPLES
+  $ agnt auth whoami
+
+  $ agnt auth whoami --json
+```
+
+_See code: [src/commands/auth/whoami.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/auth/whoami.ts)_
 
 ## `agnt help [COMMAND]`
 
@@ -65,295 +161,39 @@ DESCRIPTION
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/6.2.45/src/commands/help.ts)_
 
-## `agnt plugins`
+## `agnt project create RAW_IDEA`
 
-List installed plugins.
-
-```
-USAGE
-  $ agnt plugins [--json] [--core]
-
-FLAGS
-  --core  Show core plugins.
-
-GLOBAL FLAGS
-  --json  Format output as json.
-
-DESCRIPTION
-  List installed plugins.
-
-EXAMPLES
-  $ agnt plugins
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/5.4.62/src/commands/plugins/index.ts)_
-
-## `agnt plugins add PLUGIN`
-
-Installs a plugin into agnt.
+Create a new bounty project
 
 ```
 USAGE
-  $ agnt plugins add PLUGIN... [--json] [-f] [-h] [-s | -v]
+  $ agnt project create RAW_IDEA [-j] [-q] [-n <value>] [-t <value>] [--total_supply <value>] [-d <value>]
+    [--task_notes <value>]
 
 ARGUMENTS
-  PLUGIN...  Plugin to install.
+  RAW_IDEA  Project idea description
 
 FLAGS
-  -f, --force    Force npm to fetch remote resources even if a local copy exists on disk.
-  -h, --help     Show CLI help.
-  -s, --silent   Silences npm output.
-  -v, --verbose  Show verbose npm output.
-
-GLOBAL FLAGS
-  --json  Format output as json.
+  -d, --deadline=<value>      Deadline in RFC3339 format (e.g. 2026-06-01)
+  -j, --json                  Output in JSON format (default if piped)
+  -n, --name=<value>          Project name (derived from idea if not provided)
+  -q, --quiet                 Output only the ID or key value
+  -t, --token_symbol=<value>  Token symbol (e.g. MYTOK)
+      --task_notes=<value>    Optional task guidance for LLM plan generator
+      --total_supply=<value>  Total token supply (default 1000000000)
 
 DESCRIPTION
-  Installs a plugin into agnt.
-
-  Uses npm to install plugins.
-
-  Installation of a user-installed plugin will override a core plugin.
-
-  Use the AGNT_NPM_LOG_LEVEL environment variable to set the npm loglevel.
-  Use the AGNT_NPM_REGISTRY environment variable to set the npm registry.
-
-ALIASES
-  $ agnt plugins add
+  Create a new bounty project
 
 EXAMPLES
-  Install a plugin from npm registry.
+  $ agnt project create "Build a DeFi aggregator with cross-chain swaps"
 
-    $ agnt plugins add myplugin
+  $ agnt project create "Build a CLI tool" --token-symbol MYTOK --deadline 2026-06-01
 
-  Install a plugin from a github url.
-
-    $ agnt plugins add https://github.com/someuser/someplugin
-
-  Install a plugin from a github slug.
-
-    $ agnt plugins add someuser/someplugin
+  $ agnt project create "API for X" --task-notes "Focus on REST endpoints"
 ```
 
-## `agnt plugins:inspect PLUGIN...`
-
-Displays installation properties of a plugin.
-
-```
-USAGE
-  $ agnt plugins inspect PLUGIN...
-
-ARGUMENTS
-  PLUGIN...  [default: .] Plugin to inspect.
-
-FLAGS
-  -h, --help     Show CLI help.
-  -v, --verbose
-
-GLOBAL FLAGS
-  --json  Format output as json.
-
-DESCRIPTION
-  Displays installation properties of a plugin.
-
-EXAMPLES
-  $ agnt plugins inspect myplugin
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/5.4.62/src/commands/plugins/inspect.ts)_
-
-## `agnt plugins install PLUGIN`
-
-Installs a plugin into agnt.
-
-```
-USAGE
-  $ agnt plugins install PLUGIN... [--json] [-f] [-h] [-s | -v]
-
-ARGUMENTS
-  PLUGIN...  Plugin to install.
-
-FLAGS
-  -f, --force    Force npm to fetch remote resources even if a local copy exists on disk.
-  -h, --help     Show CLI help.
-  -s, --silent   Silences npm output.
-  -v, --verbose  Show verbose npm output.
-
-GLOBAL FLAGS
-  --json  Format output as json.
-
-DESCRIPTION
-  Installs a plugin into agnt.
-
-  Uses npm to install plugins.
-
-  Installation of a user-installed plugin will override a core plugin.
-
-  Use the AGNT_NPM_LOG_LEVEL environment variable to set the npm loglevel.
-  Use the AGNT_NPM_REGISTRY environment variable to set the npm registry.
-
-ALIASES
-  $ agnt plugins add
-
-EXAMPLES
-  Install a plugin from npm registry.
-
-    $ agnt plugins install myplugin
-
-  Install a plugin from a github url.
-
-    $ agnt plugins install https://github.com/someuser/someplugin
-
-  Install a plugin from a github slug.
-
-    $ agnt plugins install someuser/someplugin
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/5.4.62/src/commands/plugins/install.ts)_
-
-## `agnt plugins link PATH`
-
-Links a plugin into the CLI for development.
-
-```
-USAGE
-  $ agnt plugins link PATH [-h] [--install] [-v]
-
-ARGUMENTS
-  PATH  [default: .] path to plugin
-
-FLAGS
-  -h, --help          Show CLI help.
-  -v, --verbose
-      --[no-]install  Install dependencies after linking the plugin.
-
-DESCRIPTION
-  Links a plugin into the CLI for development.
-
-  Installation of a linked plugin will override a user-installed or core plugin.
-
-  e.g. If you have a user-installed or core plugin that has a 'hello' command, installing a linked plugin with a 'hello'
-  command will override the user-installed or core plugin implementation. This is useful for development work.
-
-
-EXAMPLES
-  $ agnt plugins link myplugin
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/5.4.62/src/commands/plugins/link.ts)_
-
-## `agnt plugins remove [PLUGIN]`
-
-Removes a plugin from the CLI.
-
-```
-USAGE
-  $ agnt plugins remove [PLUGIN...] [-h] [-v]
-
-ARGUMENTS
-  [PLUGIN...]  plugin to uninstall
-
-FLAGS
-  -h, --help     Show CLI help.
-  -v, --verbose
-
-DESCRIPTION
-  Removes a plugin from the CLI.
-
-ALIASES
-  $ agnt plugins unlink
-  $ agnt plugins remove
-
-EXAMPLES
-  $ agnt plugins remove myplugin
-```
-
-## `agnt plugins reset`
-
-Remove all user-installed and linked plugins.
-
-```
-USAGE
-  $ agnt plugins reset [--hard] [--reinstall]
-
-FLAGS
-  --hard       Delete node_modules and package manager related files in addition to uninstalling plugins.
-  --reinstall  Reinstall all plugins after uninstalling.
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/5.4.62/src/commands/plugins/reset.ts)_
-
-## `agnt plugins uninstall [PLUGIN]`
-
-Removes a plugin from the CLI.
-
-```
-USAGE
-  $ agnt plugins uninstall [PLUGIN...] [-h] [-v]
-
-ARGUMENTS
-  [PLUGIN...]  plugin to uninstall
-
-FLAGS
-  -h, --help     Show CLI help.
-  -v, --verbose
-
-DESCRIPTION
-  Removes a plugin from the CLI.
-
-ALIASES
-  $ agnt plugins unlink
-  $ agnt plugins remove
-
-EXAMPLES
-  $ agnt plugins uninstall myplugin
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/5.4.62/src/commands/plugins/uninstall.ts)_
-
-## `agnt plugins unlink [PLUGIN]`
-
-Removes a plugin from the CLI.
-
-```
-USAGE
-  $ agnt plugins unlink [PLUGIN...] [-h] [-v]
-
-ARGUMENTS
-  [PLUGIN...]  plugin to uninstall
-
-FLAGS
-  -h, --help     Show CLI help.
-  -v, --verbose
-
-DESCRIPTION
-  Removes a plugin from the CLI.
-
-ALIASES
-  $ agnt plugins unlink
-  $ agnt plugins remove
-
-EXAMPLES
-  $ agnt plugins unlink myplugin
-```
-
-## `agnt plugins update`
-
-Update installed plugins.
-
-```
-USAGE
-  $ agnt plugins update [-h] [-v]
-
-FLAGS
-  -h, --help     Show CLI help.
-  -v, --verbose
-
-DESCRIPTION
-  Update installed plugins.
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/5.4.62/src/commands/plugins/update.ts)_
+_See code: [src/commands/project/create.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/project/create.ts)_
 
 ## `agnt project list`
 
@@ -383,6 +223,34 @@ EXAMPLES
 
 _See code: [src/commands/project/list.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/project/list.ts)_
 
+## `agnt project publish ID`
+
+Publish a ready_to_publish project to GitHub
+
+```
+USAGE
+  $ agnt project publish ID [-j] [-q]
+
+ARGUMENTS
+  ID  Project ID or slug
+
+FLAGS
+  -j, --json   Output in JSON format (default if piped)
+  -q, --quiet  Output only the ID or key value
+
+DESCRIPTION
+  Publish a ready_to_publish project to GitHub
+
+EXAMPLES
+  $ agnt project publish proj_abc123
+
+  $ agnt project publish my-project-slug
+
+  $ agnt project publish proj_abc123 --json
+```
+
+_See code: [src/commands/project/publish.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/project/publish.ts)_
+
 ## `agnt project show ID`
 
 Show project details
@@ -410,6 +278,29 @@ EXAMPLES
 ```
 
 _See code: [src/commands/project/show.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/project/show.ts)_
+
+## `agnt stats`
+
+Show platform-wide stats
+
+```
+USAGE
+  $ agnt stats [-j] [-q]
+
+FLAGS
+  -j, --json   Output in JSON format (default if piped)
+  -q, --quiet  Output only the ID or key value
+
+DESCRIPTION
+  Show platform-wide stats
+
+EXAMPLES
+  $ agnt stats
+
+  $ agnt stats --json
+```
+
+_See code: [src/commands/stats.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/stats.ts)_
 
 ## `agnt task list PROJECTID`
 

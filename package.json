@@ -10,7 +10,7 @@
   "dependencies": {
     "@oclif/core": "^4",
     "@oclif/plugin-help": "^6",
-    "@oclif/plugin-plugins": "^5"
+    "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {
     "@oclif/test": "^4",
@@ -19,11 +19,12 @@
     "eslint-plugin-perfectionist": "^5.9.0",
     "nock": "^14.0.13",
     "oclif": "^4",
+    "openapi-typescript": "^7.13.0",
     "oxfmt": "^0.47.0",
     "oxlint": "^1.62.0",
     "shx": "^0.4.0",
     "ts-node": "^10",
-    "typescript": "^6",
+    "typescript": "^5.9.3",
     "vitest": "^3"
   },
   "engines": {
@@ -46,8 +47,7 @@
     "dirname": "agnt",
     "commands": "./dist/commands",
     "plugins": [
-      "@oclif/plugin-help",
-      "@oclif/plugin-plugins"
+      "@oclif/plugin-help"
     ],
     "topicSeparator": " "
   },

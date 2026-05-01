@@ -1,8 +1,8 @@
 import {Args, Command, Flags} from '@oclif/core'
 
-import {apiGet} from '../../lib/api.js'
 import {outputFlags} from '../../lib/flags.js'
 import {outputJSON} from '../../lib/output.js'
+import {client} from '../../lib/client.js'
 
 export default class TaskShow extends Command {
   static description = 'Show task details including full body_md'
@@ -29,22 +29,24 @@ export default class TaskShow extends Command {
   async run(): Promise<void> {
     const {args, flags} = await this.parse(TaskShow)
 
-    try {
-      const task = await apiGet(`/api/builder/projects/${args.projectId}/tasks/${args.slug}`) as {body_md?: string}
+    const {data, error} = await client.GET('/builder/projects/{id}/tasks/{slug}', {
+      params: {path: {id: args.projectId, slug: args.slug}},
+    })
 
-      if (flags.body && task.body_md) {
-        process.stdout.write(task.body_md)
-        return
-      }
-
-      outputJSON(task, flags.json, flags.quiet)
-    } catch (error) {
-      const e = error as {message?: string; status?: number}
-      if (e.status === 404) {
+    if (error) {
+      if (error.error === 'not_found') {
         this.error(`Task not found: ${args.projectId}/${args.slug}`, {exit: 4})
       }
-
-      this.error(e.message ?? 'Failed to get task', {exit: 1})
+      this.error(`API error: ${error.error ?? 'Unknown'}`, {exit: 1})
     }
+
+    const bodyMd = data?.task?.body_md
+
+    if (flags.body && bodyMd) {
+      process.stdout.write(bodyMd)
+      return
+    }
+
+    outputJSON(data, flags.json, flags.quiet)
   }
 }

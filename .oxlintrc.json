@@ -125,7 +125,8 @@
     "**/oclif.manifest.json",
     "**/yarn.lock",
     "**/pnpm-lock.yaml",
-    "**/*.tsbuildinfo"
+    "**/*.tsbuildinfo",
+    "**/api-types.ts"
   ],
   "rules": {
     "constructor-super": "error",
@@ -620,7 +621,16 @@
           "error",
           {
             "newIsCap": true,
-            "capIsNew": true
+            "capIsNew": false,
+            "newIsCapExceptions": [
+              "GET",
+              "POST",
+              "PUT",
+              "DELETE",
+              "PATCH",
+              "HEAD",
+              "OPTIONS"
+            ]
           }
         ],
         "no-bitwise": "error",
