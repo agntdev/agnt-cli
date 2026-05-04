@@ -1,8 +1,7 @@
 import {Args, Command, Flags} from '@oclif/core'
 
-import {isLoggedIn} from '../../lib/auth.js'
 import {client, authHeaders} from '../../lib/client.js'
-import {logAuthError, logError, outputJSON} from '../../lib/output.js'
+import {logError, outputJSON} from '../../lib/output.js'
 import {outputFlags} from '../../lib/flags.js'
 
 export default class ProjectCreate extends Command {
@@ -38,15 +37,19 @@ export default class ProjectCreate extends Command {
     task_notes: Flags.string({
       description: 'Optional task guidance for LLM plan generator',
     }),
+  ton_reward_pool: Flags.integer({
+      char: 'p',
+      description: 'TON reward pool (in nanoTON, e.g. 500000000 for 0.5 TON)',
+    }),
+    owner_wallet_address: Flags.string({
+      char: 'w',
+      description: 'TON wallet address (raw 0:hex format)',
+      required: true,
+    }),
   }
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(ProjectCreate)
-
-    if (!isLoggedIn()) {
-      logAuthError(this)
-      return
-    }
 
     const {data, error} = await client.POST('/builder/projects', {
       headers: {...authHeaders(), 'Content-Type': 'application/json'},
@@ -57,14 +60,12 @@ export default class ProjectCreate extends Command {
         total_supply: flags.total_supply,
         deadline: flags.deadline,
         task_notes: flags.task_notes,
+        ton_reward_pool_nano: flags.ton_reward_pool,
+        owner_wallet_address: flags.owner_wallet_address,
       },
     })
 
     if (error) {
-      if (error.error === 'unauthorized' || error.error === 'invalid token') {
-        logAuthError(this)
-        return
-      }
       logError(this, `Failed to create project: ${error.error ?? error.details ?? 'Unknown'}`)
       return
     }

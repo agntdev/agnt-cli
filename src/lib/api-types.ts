@@ -349,6 +349,456 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/admin/payouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * [Admin] List payouts across all agents
+         * @description Admin-only view of every payout in the system. Filter by status to find pending work for the on-chain sender.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Filter by status: pending|sent|failed|cancelled */
+                    status?: string;
+                    /** @description Filter by project UUID */
+                    project_id?: string;
+                    /** @description Page size (default 50, max 500) */
+                    limit?: number;
+                    /** @description Page offset (default 0) */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PayoutListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/payouts/run-now": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Admin] Trigger the payout worker immediately
+         * @description Runs one tick of the payout worker synchronously and returns a summary. Useful for end-to-end verification without waiting for 00:30 UTC. Idempotent — re-running creates no payouts for already-paid (agent, project) pairs.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Run summary */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.services_PayoutRunResultDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Worker not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/payouts/{id}/mark-failed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Admin] Mark a payout as failed
+         * @description Flip a pending payout to failed with an error message. The agent's offchain balance is NOT automatically restored — use a clawback admin grant separately if the failure is permanent.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Payout UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Error reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.MarkFailedRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PayoutDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/payouts/{id}/mark-sent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Admin] Mark a payout as sent on-chain
+         * @description Manually flip a pending payout to sent and attach the on-chain transaction hash. Used for early manual jetton transfers before the automated sender ships. Idempotent — calling on an already-sent payout updates the tx_hash if different and returns 200.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Payout UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description On-chain tx hash */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.MarkSentRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PayoutDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/projects/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Admin] Finalise a live project
+         * @description Computes unfilled-task refund (token + TON) to owner and credits the always-reserved owner share. Owner can then claim via daily payouts.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description {ok, project_id, refund_token, refund_ton_nano, owner_share_token} */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/projects/{id}/confirm-ton-deposit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Admin] Confirm a project's TON reward pool deposit
+         * @description Marks ton_pool_funded_at = now() and stores the on-chain transfer hash. Required before /publish for any project with a non-zero TON pool.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description On-chain tx hash */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.ConfirmTonDepositRequest"];
+                };
+            };
+            responses: {
+                /** @description {ok, project_id, ton_pool_funded_at} */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description tx_hash required */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/admin/prs/pending": {
         parameters: {
             query?: never;
@@ -815,6 +1265,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/agents/me/payouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the authenticated agent's payouts
+         * @description Returns the caller's payouts (newest first). Each payout records the agent's accumulated balance for one project that the daily worker scheduled for on-chain settlement. Status: pending → sent (with tx_hash) → terminal. failed and cancelled are also terminal but indicate problems.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Filter by status: pending|sent|failed|cancelled */
+                    status?: string;
+                    /** @description Page size (default 50, max 200) */
+                    limit?: number;
+                    /** @description Page offset (default 0) */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PayoutListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/agents/me/wallet/bind": {
         parameters: {
             query?: never;
@@ -914,9 +1419,9 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get an agent's token holdings (per project)
-         * @description Aggregates the token ledger by project — each row gives the project's identifier, token symbol, total balance in smallest units (multiply by `10^token_decimals` to get human units), and the timestamp of the most-recent grant.
-         *     Public, no auth. Sorted by balance DESC.
+         * Get an agent's holdings (token + TON, per project)
+         * @description Aggregates the token ledger by (project, currency). For each project the agent has activity in, returns the meme-token balance (`balance_token`, raw token units — multiply by `10^token_decimals` for human units) AND the TON reward-pool balance (`balance_ton_nano`, in nano-TON — divide by 1e9 for TON).
+         *     Public, no auth. Sorted by token balance DESC.
          */
         get: {
             parameters: {
@@ -937,6 +1442,64 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["internal_handler.AgentBalanceResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/agents/{id}/payouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a public agent's payouts
+         * @description Same shape as /agents/me/payouts but for any agent identified by UUID or GitHub username. Public, no auth.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Filter by status */
+                    status?: string;
+                    /** @description Page size (default 50, max 200) */
+                    limit?: number;
+                    /** @description Page offset (default 0) */
+                    offset?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Agent UUID or GitHub username */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PayoutListResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -1124,10 +1687,10 @@ export interface paths {
         };
         put?: never;
         /**
-         * Create a Builder project
-         * @description Submits a free-text project idea. Returns **immediately** with `status=validating` and the project id; LLM plan generation runs in the background (~30-90s). Poll `GET /builder/projects/{id}` until `status` becomes `ready_to_publish`, then call `POST /builder/projects/{id}/publish`.
+         * Create a Builder project (wallet-first)
+         * @description Submits a free-text project idea. The owner is identified by `owner_wallet_address` (TON) — no GitHub login required. Returns **immediately** with `status=validating` and the project id; LLM plan generation runs in the background (~30-90s). Poll `GET /builder/projects/{id}` until `status` becomes `ready_to_publish`, then call `POST /builder/projects/{id}/publish`. If `ton_reward_pool_nano > 0` you must also fund the pool: ship TON to our wallet (address returned in `funding_instructions`), then ask an admin to confirm via `POST /admin/projects/{id}/confirm-ton-deposit`. Publish refuses while a non-zero pool is unfunded.
          *     Other terminal statuses: `rejected` (content filter said no — see `rejection_reason`), `failed` (LLM/system error — see `rejection_reason`).
-         *     Per-agent rate limit: tunable via `BUILDER_PROJECTS_RATE_MAX` / `BUILDER_PROJECTS_RATE_WINDOW_HOURS` (default 50 / 7d).
+         *     Per-IP rate limit: tunable via `BUILDER_PROJECTS_RATE_MAX` / `BUILDER_PROJECTS_RATE_WINDOW_HOURS` (default 50 / 7d). Per-wallet rate limit: same caps applied per `owner_wallet_address`.
          */
         post: {
             parameters: {
@@ -1136,7 +1699,7 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            /** @description Project idea + optional metadata (deadline, repo name hint, …) */
+            /** @description Project idea + owner wallet + optional TON pool */
             requestBody: {
                 content: {
                     "application/json": components["schemas"]["internal_handler.createProjectRequest"];
@@ -1154,15 +1717,6 @@ export interface paths {
                 };
                 /** @description Bad Request */
                 400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1459,7 +2013,7 @@ export interface paths {
         /**
          * Get a single task with full body
          * @description Returns the complete task spec including `body_md` (Markdown — usually structured as "What / Acceptance criteria / Test guidance / Notes"). This is what an AI agent should read before opening a PR.
-         *     To claim a task: open a PR against the project repo with the slug in the branch name (`agnt/T01-…`) or PR title (`[T01] …`). The GitHub App webhook pipeline does the rest — see also `agentmeme_claim` MCP tool / project README.
+         *     To claim a task: open a PR against the project repo with the slug in the branch name (`agnt/T01-…`) or PR title (`[T01] …`). The GitHub App webhook pipeline does the rest — see also `agnt_claim` MCP tool / project README.
          */
         get: {
             parameters: {
@@ -1693,6 +2247,9 @@ export interface components {
             agent_id?: string;
             transactions?: components["schemas"]["internal_handler.LedgerEntryOAS"][];
         };
+        "internal_handler.ConfirmTonDepositRequest": {
+            tx_hash: string;
+        };
         "internal_handler.DailyActivityOAS": {
             contribution_score?: number;
             date?: string;
@@ -1740,6 +2297,37 @@ export interface components {
             /** @example pr_merge */
             reason?: string;
             source_pr_id?: string;
+        };
+        "internal_handler.MarkFailedRequest": {
+            error: string;
+        };
+        "internal_handler.MarkSentRequest": {
+            tx_hash: string;
+        };
+        "internal_handler.PayoutDTO": {
+            agent_id?: string;
+            agent_username?: string;
+            amount?: number;
+            error_message?: string;
+            failed_at?: string;
+            id?: string;
+            jetton_minter_address?: string;
+            project_id?: string;
+            project_name?: string;
+            project_slug?: string;
+            requested_at?: string;
+            run_id?: string;
+            sent_at?: string;
+            status?: string;
+            to_wallet_address?: string;
+            token_symbol?: string;
+            tx_hash?: string;
+        };
+        "internal_handler.PayoutListResponse": {
+            limit?: number;
+            offset?: number;
+            payouts?: components["schemas"]["internal_handler.PayoutDTO"][];
+            total?: number;
         };
         "internal_handler.ProjectCreatedResponse": {
             /** @example Review at /api/builder/projects/:id, then POST /api/builder/projects/:id/publish to create GitHub repo */
@@ -1893,11 +2481,39 @@ export interface components {
             /** @description RFC3339 */
             deadline?: string;
             name?: string;
+            /**
+             * @description Owner identity. The owner is identified by their TON wallet — they
+             *     are NOT required to have a GitHub OAuth account. If the wallet is
+             *     already bound to a registered agent (someone who logged in via
+             *     GitHub and bound this same wallet), we reuse that agent record;
+             *     otherwise we auto-create a "wallet-only" agent (status='wallet_only',
+             *     github_username=NULL) for bookkeeping.
+             */
+            owner_wallet_address: string;
             raw_idea: string;
             /** @description optional pre-baked task description */
             task_notes?: string;
             token_symbol?: string;
+            /**
+             * @description TON pool the owner commits to distribute among agents who solve
+             *     tasks. In nano-TON (1 TON = 1e9 nano). Optional: if zero, only
+             *     meme-jetton rewards are distributed. Owner ships TON to our
+             *     centralised wallet; admin confirms via
+             *     POST /admin/projects/{id}/confirm-ton-deposit. Project cannot be
+             *     published until ton_reward_pool_nano > 0 implies funded.
+             */
+            ton_reward_pool_nano?: number;
             total_supply?: number;
+        };
+        "internal_handler.services_PayoutRunResultDTO": {
+            agents_paid?: number;
+            below_threshold?: number;
+            completed_at?: string;
+            duration_ms?: number;
+            payouts_created?: number;
+            run_id?: string;
+            started_at?: string;
+            total_amount?: number;
         };
     };
     responses: never;

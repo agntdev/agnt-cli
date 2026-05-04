@@ -4,7 +4,7 @@ import {describe, it, expect} from 'vitest'
 describe('auth', () => {
   describe('logout', () => {
     it('exits with code 3 when not logged in', async () => {
-      const {error} = await runCommand(['auth', 'logout', '--force'])
+      const {error} = await runCommand(['auth', 'logout'])
       expect(error?.oclif?.exit).to.eq(3)
     })
   })

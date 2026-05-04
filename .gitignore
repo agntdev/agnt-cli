@@ -12,3 +12,8 @@ oclif.manifest.json
 yarn.lock
 pnpm-lock.yaml
 *.tsbuildinfo
+.agents
+.claude
+.continue
+skills-lock.json
+skills/ton-docs

@@ -18,5 +18,5 @@ export function logError(ctx: Command, msg: string): void {
 }
 
 export function logAuthError(ctx: Command): void {
-  ctx.error('Not authenticated. Run "agnt login" first.', {exit: 3})
+  ctx.error('Not authenticated. Run "agnt auth login" first.', {exit: 3})
 }

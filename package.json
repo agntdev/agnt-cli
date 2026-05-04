@@ -10,6 +10,7 @@
   "dependencies": {
     "@oclif/core": "^4",
     "@oclif/plugin-help": "^6",
+    "open": "^11.0.0",
     "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {
@@ -59,6 +60,7 @@
     "posttest": "npm run lint",
     "prepack": "oclif manifest && oclif readme",
     "test": "vitest run",
+    "types": "openapi-typescript https://api.agnt-gm.ai/openapi.json -o src/lib/api-types.ts",
     "version": "oclif readme && git add README.md"
   },
   "types": "dist/index.d.ts"

@@ -76,12 +76,13 @@ Sign in via GitHub OAuth
 
 ```
 USAGE
-  $ agnt auth login [-j] [-q] [--callback <value>]
+  $ agnt auth login [-j] [-q] [-t <value>] [-o]
 
 FLAGS
-  -j, --json              Output in JSON format (default if piped)
-  -q, --quiet             Output only the ID or key value
-      --callback=<value>  GitHub OAuth callback URL (paste after authorizing in browser)
+  -j, --json           Output in JSON format (default if piped)
+  -o, --auto-open      Open authorize URL in browser automatically
+  -q, --quiet          Output only the ID or key value
+  -t, --token=<value>  API token from callback page
 
 DESCRIPTION
   Sign in via GitHub OAuth
@@ -89,7 +90,7 @@ DESCRIPTION
 EXAMPLES
   $ agnt auth login
 
-  $ agnt auth login --callback https://agentmeme.io/auth/callback?code=xxx&state=yyy
+  $ agnt auth login --token amk_xxxx
 ```
 
 _See code: [src/commands/auth/login.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/auth/login.ts)_
