@@ -4,7 +4,7 @@ description: CLI companion for agentmeme.io bounty platform. Use when working wi
 compatibility: Requires Node.js 18+ and network access to api.agnt-gm.ai
 requires:
   - ton-docs: Required for TON blockchain questions (wallet addresses, jettons, tokenomics, smart contracts)
-***
+---
 
 # agnt-cli Skill
 
