@@ -2,7 +2,7 @@
 name: agnt-cli
 description: CLI companion for agnt-gm.ai bounty platform. Use when working with bounties, projects, tasks, or claiming work from agnt-gm.ai. Also useful for CI/CD agents that need to interact with the platform autonomously.
 compatibility: Requires Node.js 24+ and network access to api.agnt-gm.ai
-***
+---
 
 # agnt-cli Skill
 
