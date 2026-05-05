@@ -1,12 +1,17 @@
 {
-  "name": "agnt",
+  "name": "agnt-cli",
   "description": "A new CLI generated with oclif",
-  "version": "0.0.0",
-  "author": "Stanislav Smirnov",
+  "version": "0.1.0",
+  "author": "Tongateway <https://github.com/tongateway>",
+  "contributors": [
+    "Stanislav Smirnov <https://github.com/laontme>"
+  ],
   "bin": {
     "agnt": "./bin/run.js"
   },
-  "bugs": "https://github.com/tongateway/agnt-cli/issues",
+  "bugs": {
+    "url": "https://github.com/tongateway/agnt-cli/issues"
+  },
   "dependencies": {
     "@oclif/core": "^4",
     "@oclif/plugin-help": "^6",
@@ -52,7 +57,10 @@
     ],
     "topicSeparator": " "
   },
-  "repository": "tongateway/agnt-cli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tongateway/agnt-cli.git"
+  },
   "scripts": {
     "build": "shx rm -rf dist && tsc -b",
     "lint": "oxlint",

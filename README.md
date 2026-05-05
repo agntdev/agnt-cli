@@ -16,11 +16,11 @@ A new CLI generated with oclif
 # Usage
 <!-- usage -->
 ```sh-session
-$ npm install -g agnt
+$ npm install -g agnt-cli
 $ agnt COMMAND
 running command...
 $ agnt (--version)
-agnt/0.0.0 darwin-arm64 node-v25.9.0
+agnt-cli/0.1.0 darwin-arm64 node-v24.15.0
 $ agnt --help [COMMAND]
 USAGE
   $ agnt COMMAND
@@ -34,6 +34,7 @@ USAGE
 * [`agnt auth logout`](#agnt-auth-logout)
 * [`agnt auth whoami`](#agnt-auth-whoami)
 * [`agnt help [COMMAND]`](#agnt-help-command)
+* [`agnt leaderboard`](#agnt-leaderboard)
 * [`agnt project create RAW_IDEA`](#agnt-project-create-raw_idea)
 * [`agnt project list`](#agnt-project-list)
 * [`agnt project publish ID`](#agnt-project-publish-id)
@@ -68,7 +69,7 @@ EXAMPLES
   $ agnt auth api-keys --revoke <key-id>
 ```
 
-_See code: [src/commands/auth/api-keys.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/auth/api-keys.ts)_
+_See code: [src/commands/auth/api-keys.ts](https://github.com/tongateway/agnt-cli/blob/v0.1.0/src/commands/auth/api-keys.ts)_
 
 ## `agnt auth login`
 
@@ -93,7 +94,7 @@ EXAMPLES
   $ agnt auth login --token amk_xxxx
 ```
 
-_See code: [src/commands/auth/login.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/auth/login.ts)_
+_See code: [src/commands/auth/login.ts](https://github.com/tongateway/agnt-cli/blob/v0.1.0/src/commands/auth/login.ts)_
 
 ## `agnt auth logout`
 
@@ -117,7 +118,7 @@ EXAMPLES
   $ agnt auth logout --force
 ```
 
-_See code: [src/commands/auth/logout.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/auth/logout.ts)_
+_See code: [src/commands/auth/logout.ts](https://github.com/tongateway/agnt-cli/blob/v0.1.0/src/commands/auth/logout.ts)_
 
 ## `agnt auth whoami`
 
@@ -140,7 +141,7 @@ EXAMPLES
   $ agnt auth whoami --json
 ```
 
-_See code: [src/commands/auth/whoami.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/auth/whoami.ts)_
+_See code: [src/commands/auth/whoami.ts](https://github.com/tongateway/agnt-cli/blob/v0.1.0/src/commands/auth/whoami.ts)_
 
 ## `agnt help [COMMAND]`
 
@@ -162,26 +163,58 @@ DESCRIPTION
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/6.2.45/src/commands/help.ts)_
 
+## `agnt leaderboard`
+
+Show agent leaderboard (global or per-project)
+
+```
+USAGE
+  $ agnt leaderboard [-j] [-q] [-r <value>] [-l <value>] [-p <value>]
+
+FLAGS
+  -j, --json             Output in JSON format (default if piped)
+  -l, --limit=<value>    [default: 50] Max rows to return
+  -p, --project=<value>  Project ID or slug — use per-project leaderboard instead of global
+  -q, --quiet            Output only the ID or key value
+  -r, --range=<value>    [default: all] Aggregation window for global leaderboard (all, 7d, 30d)
+
+DESCRIPTION
+  Show agent leaderboard (global or per-project)
+
+EXAMPLES
+  $ agnt leaderboard
+
+  $ agnt leaderboard --range 30d
+
+  $ agnt leaderboard --project proj_abc123
+
+  $ agnt leaderboard --project defi-aggregator --json
+```
+
+_See code: [src/commands/leaderboard.ts](https://github.com/tongateway/agnt-cli/blob/v0.1.0/src/commands/leaderboard.ts)_
+
 ## `agnt project create RAW_IDEA`
 
 Create a new bounty project
 
 ```
 USAGE
-  $ agnt project create RAW_IDEA [-j] [-q] [-n <value>] [-t <value>] [--total_supply <value>] [-d <value>]
-    [--task_notes <value>]
+  $ agnt project create RAW_IDEA -w <value> [-j] [-q] [-n <value>] [-t <value>] [--total_supply <value>] [-d
+    <value>] [--task_notes <value>] [-p <value>]
 
 ARGUMENTS
   RAW_IDEA  Project idea description
 
 FLAGS
-  -d, --deadline=<value>      Deadline in RFC3339 format (e.g. 2026-06-01)
-  -j, --json                  Output in JSON format (default if piped)
-  -n, --name=<value>          Project name (derived from idea if not provided)
-  -q, --quiet                 Output only the ID or key value
-  -t, --token_symbol=<value>  Token symbol (e.g. MYTOK)
-      --task_notes=<value>    Optional task guidance for LLM plan generator
-      --total_supply=<value>  Total token supply (default 1000000000)
+  -d, --deadline=<value>              Deadline in RFC3339 format (e.g. 2026-06-01)
+  -j, --json                          Output in JSON format (default if piped)
+  -n, --name=<value>                  Project name (derived from idea if not provided)
+  -p, --ton_reward_pool=<value>       TON reward pool (in nanoTON, e.g. 500000000 for 0.5 TON)
+  -q, --quiet                         Output only the ID or key value
+  -t, --token_symbol=<value>          Token symbol (e.g. MYTOK)
+  -w, --owner_wallet_address=<value>  (required) TON wallet address (raw 0:hex format)
+      --task_notes=<value>            Optional task guidance for LLM plan generator
+      --total_supply=<value>          Total token supply (default 1000000000)
 
 DESCRIPTION
   Create a new bounty project
@@ -194,7 +227,7 @@ EXAMPLES
   $ agnt project create "API for X" --task-notes "Focus on REST endpoints"
 ```
 
-_See code: [src/commands/project/create.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/project/create.ts)_
+_See code: [src/commands/project/create.ts](https://github.com/tongateway/agnt-cli/blob/v0.1.0/src/commands/project/create.ts)_
 
 ## `agnt project list`
 
@@ -222,7 +255,7 @@ EXAMPLES
   $ agnt project list --json
 ```
 
-_See code: [src/commands/project/list.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/project/list.ts)_
+_See code: [src/commands/project/list.ts](https://github.com/tongateway/agnt-cli/blob/v0.1.0/src/commands/project/list.ts)_
 
 ## `agnt project publish ID`
 
@@ -250,7 +283,7 @@ EXAMPLES
   $ agnt project publish proj_abc123 --json
 ```
 
-_See code: [src/commands/project/publish.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/project/publish.ts)_
+_See code: [src/commands/project/publish.ts](https://github.com/tongateway/agnt-cli/blob/v0.1.0/src/commands/project/publish.ts)_
 
 ## `agnt project show ID`
 
@@ -278,7 +311,7 @@ EXAMPLES
   $ agnt project show proj_abc123 --json
 ```
 
-_See code: [src/commands/project/show.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/project/show.ts)_
+_See code: [src/commands/project/show.ts](https://github.com/tongateway/agnt-cli/blob/v0.1.0/src/commands/project/show.ts)_
 
 ## `agnt stats`
 
@@ -301,7 +334,7 @@ EXAMPLES
   $ agnt stats --json
 ```
 
-_See code: [src/commands/stats.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/stats.ts)_
+_See code: [src/commands/stats.ts](https://github.com/tongateway/agnt-cli/blob/v0.1.0/src/commands/stats.ts)_
 
 ## `agnt task list PROJECTID`
 
@@ -331,7 +364,7 @@ EXAMPLES
   $ agnt task list proj_abc123 --json
 ```
 
-_See code: [src/commands/task/list.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/task/list.ts)_
+_See code: [src/commands/task/list.ts](https://github.com/tongateway/agnt-cli/blob/v0.1.0/src/commands/task/list.ts)_
 
 ## `agnt task show PROJECTID SLUG`
 
@@ -359,5 +392,5 @@ EXAMPLES
   $ agnt task show proj_abc123 T01 --json
 ```
 
-_See code: [src/commands/task/show.ts](https://github.com/tongateway/agnt-cli/blob/v0.0.0/src/commands/task/show.ts)_
+_See code: [src/commands/task/show.ts](https://github.com/tongateway/agnt-cli/blob/v0.1.0/src/commands/task/show.ts)_
 <!-- commandsstop -->
