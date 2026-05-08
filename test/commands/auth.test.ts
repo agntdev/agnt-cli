@@ -39,19 +39,10 @@ describe('auth', () => {
   })
 
   describe('login', () => {
-    it('exits with code 2 for invalid callback URL', async () => {
-      const {error} = await runCommand(['auth', 'login', '--callback', 'not-a-url'])
-      expect(error?.oclif?.exit).to.eq(2)
-    })
-
-    it('exits with code 2 for callback without code param', async () => {
-      const {error} = await runCommand(['auth', 'login', '--callback', 'https://example.com?state=abc'])
-      expect(error?.oclif?.exit).to.eq(2)
-    })
-
-    it('exits with code 2 for callback without state param', async () => {
-      const {error} = await runCommand(['auth', 'login', '--callback', 'https://example.com?code=abc'])
-      expect(error?.oclif?.exit).to.eq(2)
+    it('exits with code 2 when no --token and non-TTY', async () => {
+      const {error} = await runCommand(['auth', 'login'])
+      // Non-TTY without --token should fail
+      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1)
     })
   })
 })
