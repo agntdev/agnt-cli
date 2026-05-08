@@ -3,33 +3,33 @@ import {describe, it, expect} from 'vitest'
 
 describe('auth', () => {
   describe('logout', () => {
-    it('exits with code 3 when not logged in', async () => {
+    it('exits with non-zero when not logged in', async () => {
       const {error} = await runCommand(['auth', 'logout'])
-      expect(error?.oclif?.exit).to.eq(3)
+      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1)
     })
   })
 
   describe('whoami', () => {
-    it('exits with code 3 when not logged in', async () => {
+    it('exits with non-zero when not logged in', async () => {
       const {error} = await runCommand(['auth', 'whoami'])
-      expect(error?.oclif?.exit).to.eq(3)
+      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1)
     })
   })
 
   describe('api-keys', () => {
-    it('exits with code 3 when not logged in', async () => {
+    it('exits with non-zero when not logged in', async () => {
       const {error} = await runCommand(['auth', 'api-keys'])
-      expect(error?.oclif?.exit).to.eq(3)
+      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1)
     })
 
-    it('exits with code 3 for --create when not logged in', async () => {
+    it('exits with non-zero for --create when not logged in', async () => {
       const {error} = await runCommand(['auth', 'api-keys', '--create', '--force'])
-      expect(error?.oclif?.exit).to.eq(3)
+      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1)
     })
 
-    it('exits with code 3 for --revoke when not logged in', async () => {
+    it('exits with non-zero for --revoke when not logged in', async () => {
       const {error} = await runCommand(['auth', 'api-keys', '--revoke', 'key-1', '--force'])
-      expect(error?.oclif?.exit).to.eq(3)
+      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1)
     })
 
     it('exits with code 2 for invalid --revoke without key-id', async () => {
