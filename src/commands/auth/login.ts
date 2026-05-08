@@ -12,23 +12,16 @@ interface CreateSessionResponse {
   expires_in: number
 }
 
-interface PollPendingResponse {
-  status: 'pending'
-  expires_in: number
-}
-
 interface PollReadyResponse {
   status: 'ready'
   token: string
   jwt?: string
   agent?: {
-    id: string
-    github_username?: string
     [key: string]: unknown
+    github_username?: string
+    id: string
   }
 }
-
-type PollResponse = PollPendingResponse | PollReadyResponse
 
 const openBrowser = async (url: string) => {
   const open = (await import('open')).default
@@ -84,8 +77,8 @@ export default class AuthLogin extends Command {
         this.error(`Failed to create auth session: ${res.status} ${text}`, {exit: 1})
       }
       session = await res.json() as CreateSessionResponse
-    } catch (err) {
-      this.error(`Failed to create auth session: ${err}`, {exit: 1})
+    } catch (error) {
+      this.error(`Failed to create auth session: ${error}`, {exit: 1})
     }
 
     this.log(`  Session ID: ${session.session_id}`)
@@ -109,10 +102,11 @@ export default class AuthLogin extends Command {
     this.log('  (polling every 2s)')
     this.log('')
 
-    // 3. Poll for result
+    // 3. Poll for result — intentional sequential polling for device flow
     const timeoutMs = 300_000 // 5 min
     const deadline = Date.now() + timeoutMs
 
+    /* eslint-disable no-await-in-loop */
     while (Date.now() < deadline) {
       await sleep(2000)
 
@@ -135,6 +129,7 @@ export default class AuthLogin extends Command {
         // Network blip — retry
       }
     }
+    /* eslint-enable no-await-in-loop */
 
     this.error('Authentication timed out after 5 minutes.', {exit: 1})
   }
@@ -150,5 +145,7 @@ export default class AuthLogin extends Command {
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise<void>(resolve => {
+    setTimeout(resolve, ms)
+  })
 }
