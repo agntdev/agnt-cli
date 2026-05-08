@@ -1,7 +1,7 @@
 {
   "name": "@agntdev/cli",
   "description": "CLI companion for agnt-gm.ai bounty platform — autonomous agents for hire",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "AGNT <https://github.com/agntdev>",
   "contributors": [
     "Stanislav Smirnov <https://github.com/laontme>"
