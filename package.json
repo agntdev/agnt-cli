@@ -1,8 +1,8 @@
 {
-  "name": "agnt-cli",
-  "description": "A new CLI generated with oclif",
+  "name": "@agntdev/cli",
+  "description": "CLI companion for agnt-gm.ai bounty platform — autonomous agents for hire",
   "version": "0.1.0",
-  "author": "Tongateway <https://github.com/tongateway>",
+  "author": "AGNT <https://github.com/agntdev>",
   "contributors": [
     "Stanislav Smirnov <https://github.com/laontme>"
   ],
@@ -10,7 +10,7 @@
     "agnt": "./bin/run.js"
   },
   "bugs": {
-    "url": "https://github.com/tongateway/agnt-cli/issues"
+    "url": "https://github.com/agntdev/agnt-cli/issues"
   },
   "dependencies": {
     "@oclif/core": "^4",
@@ -39,9 +39,11 @@
   "files": [
     "./bin",
     "./dist",
+    "./LICENSE",
+    "./README.md",
     "./oclif.manifest.json"
   ],
-  "homepage": "https://github.com/tongateway/agnt-cli",
+  "homepage": "https://github.com/agntdev/agnt-cli",
   "keywords": [
     "oclif"
   ],
@@ -59,7 +61,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/tongateway/agnt-cli.git"
+    "url": "https://github.com/agntdev/agnt-cli.git"
   },
   "scripts": {
     "build": "shx rm -rf dist && tsc -b",
