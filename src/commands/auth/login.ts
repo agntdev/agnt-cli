@@ -5,17 +5,30 @@ import {saveCredentials} from '../../lib/auth.js'
 
 const API_BASE = (process.env.AGNT_API_BASE || 'https://api.agnt-gm.ai/api').replace(/\/$/, '')
 
-interface CliSession {
+interface CreateSessionResponse {
   session_id: string
   login_url: string
   expires_at: string
+  expires_in: number
 }
 
-interface CliSessionResult {
+interface PollPendingResponse {
+  status: 'pending'
+  expires_in: number
+}
+
+interface PollReadyResponse {
+  status: 'ready'
   token: string
   jwt?: string
-  agent?: {id: string}
+  agent?: {
+    id: string
+    github_username?: string
+    [key: string]: unknown
+  }
 }
+
+type PollResponse = PollPendingResponse | PollReadyResponse
 
 const openBrowser = async (url: string) => {
   const open = (await import('open')).default
@@ -39,7 +52,7 @@ export default class AuthLogin extends Command {
     'auto-open': Flags.boolean({
       char: 'o',
       default: true,
-      description: 'Open authorize URL in browser automatically',
+      description: 'Open GitHub authorization in browser automatically',
     }),
   }
 
@@ -55,11 +68,11 @@ export default class AuthLogin extends Command {
       this.error('Non-interactive environment detected. Use --token to pass credentials directly.\n  Example: agnt auth login --token amk_xxxx', {exit: 2})
     }
 
-    // 1. Create a CLI session
+    // 1. Create a CLI poll-session
     this.log('')
     this.log('  Creating authentication session…')
 
-    let session: CliSession
+    let session: CreateSessionResponse
     try {
       const res = await fetch(`${API_BASE}/auth/cli-session`, {
         method: 'POST',
@@ -70,21 +83,26 @@ export default class AuthLogin extends Command {
         const text = await res.text().catch(() => 'Unknown')
         this.error(`Failed to create auth session: ${res.status} ${text}`, {exit: 1})
       }
-      session = await res.json() as CliSession
+      session = await res.json() as CreateSessionResponse
     } catch (err) {
       this.error(`Failed to create auth session: ${err}`, {exit: 1})
     }
 
     this.log(`  Session ID: ${session.session_id}`)
-    this.log(`  Expires at: ${session.expires_at}`)
+    this.log(`  Expires in: ${session.expires_in}s`)
     this.log('')
 
-    // 2. Open browser
+    // 2. Open the browser directly to GitHub OAuth with the session embedded.
+    //    We bypass the SPA's /cli-login page (which doesn't exist yet) and
+    //    instead use the API's own ?cli_session= parameter on the GitHub
+    //    OAuth start endpoint. The callback handler stores tokens in Redis
+    //    under this session_id, and we pick them up via polling below.
+    const authUrl = `${API_BASE}/auth/github?cli_session=${session.session_id}&redirect=1`
     this.log('  Opening GitHub authorization…')
     if (flags['auto-open']) {
-      await openBrowser(session.login_url)
+      await openBrowser(authUrl)
     } else {
-      this.log(`  ${session.login_url}`)
+      this.log(`  Open this URL in your browser:\n  ${authUrl}`)
     }
 
     this.log('  Waiting for you to authorize in the browser…')
@@ -102,13 +120,14 @@ export default class AuthLogin extends Command {
         const res = await fetch(`${API_BASE}/auth/cli-session/${session.session_id}`)
 
         if (res.status === 200) {
-          const data = await res.json() as CliSessionResult
+          const data = await res.json() as PollReadyResponse
           this.saveToken(data.token, data.jwt, data.agent?.id)
           return
         }
 
         if (res.status === 410) {
-          this.error('Session expired. Run agnt auth login again.', {exit: 1})
+          const text = await res.text().catch(() => '')
+          this.error(`Session expired. Run ${this.config.bin} auth login again.${text ? ' ' + text : ''}`, {exit: 1})
         }
 
         // 202 = still pending, keep polling
