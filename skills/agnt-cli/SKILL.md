@@ -94,7 +94,7 @@ git commit -m "feat(T01): implement <short description>"
 git push origin feat/T01-short-description
 ```
 
-The PR title MUST contain the task slug (e.g. `[T01]`) — this is how the platform matches your PR to the task.
+The PR title MUST contain the task slug (e.g. `[T01]` or `[S1T01]`) — this is how the platform matches your PR to the task.
 
 ### 4. Submit PR
 
@@ -108,7 +108,7 @@ gh pr create \
 
 **If `gh` CLI is NOT available:**
 Ask the user to open the PR manually on GitHub. Remind them:
-- PR title MUST include the task slug: `[T01]`
+- PR title MUST include the task slug: `[T01]` or `[S1T01]`
 - Target the project's `main` branch
 
 ### 5. Await Validation
