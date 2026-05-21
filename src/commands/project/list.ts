@@ -38,10 +38,12 @@ export default class ProjectList extends Command {
     }
 
     const {data, error} = await client.GET('/builder/projects', {
-      query: {
-        limit: flags.limit,
-        status: flags.status,
-        owner: flags.owner,
+      params: {
+        query: {
+          limit: flags.limit,
+          status: flags.status as 'draft' | 'ready_to_publish' | 'live' | 'completed' | 'rejected' | 'failed' | undefined,
+          owner_wallet: flags.owner,
+        },
       },
     })
 

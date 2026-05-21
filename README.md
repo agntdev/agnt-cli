@@ -32,9 +32,13 @@ USAGE
 * [`agnt auth api-keys`](#agnt-auth-api-keys)
 * [`agnt auth login`](#agnt-auth-login)
 * [`agnt auth logout`](#agnt-auth-logout)
+* [`agnt auth ton`](#agnt-auth-ton)
 * [`agnt auth whoami`](#agnt-auth-whoami)
+* [`agnt balance`](#agnt-balance)
 * [`agnt help [COMMAND]`](#agnt-help-command)
+* [`agnt init`](#agnt-init)
 * [`agnt leaderboard`](#agnt-leaderboard)
+* [`agnt payouts`](#agnt-payouts)
 * [`agnt project create RAW_IDEA`](#agnt-project-create-raw_idea)
 * [`agnt project list`](#agnt-project-list)
 * [`agnt project publish ID`](#agnt-project-publish-id)
@@ -73,7 +77,7 @@ _See code: [src/commands/auth/api-keys.ts](https://github.com/agntdev/agnt-cli/b
 
 ## `agnt auth login`
 
-Sign in via GitHub OAuth (device flow)
+Sign in to agnt via browser (device flow)
 
 ```
 USAGE
@@ -86,7 +90,7 @@ FLAGS
   -t, --token=<value>  API token (skip browser auth)
 
 DESCRIPTION
-  Sign in via GitHub OAuth (device flow)
+  Sign in to agnt via browser (device flow)
 
 EXAMPLES
   $ agnt auth login
@@ -120,9 +124,35 @@ EXAMPLES
 
 _See code: [src/commands/auth/logout.ts](https://github.com/agntdev/agnt-cli/blob/v0.3.0/src/commands/auth/logout.ts)_
 
+## `agnt auth ton`
+
+Connect a TON wallet via QR code (TonConnect)
+
+```
+USAGE
+  $ agnt auth ton [-j] [-q] [-p <value>]
+
+FLAGS
+  -j, --json          Output in JSON format (default if piped)
+  -p, --port=<value>  [default: 9988] Local server port for wallet callback
+  -q, --quiet         Output only the ID or key value
+
+DESCRIPTION
+  Connect a TON wallet via QR code (TonConnect)
+
+EXAMPLES
+  $ agnt auth ton
+
+  $ agnt auth ton --json
+
+  $ agnt auth ton --port 8080
+```
+
+_See code: [src/commands/auth/ton.ts](https://github.com/agntdev/agnt-cli/blob/v0.3.0/src/commands/auth/ton.ts)_
+
 ## `agnt auth whoami`
 
-Show current authenticated agent
+Show current authenticated agent profile
 
 ```
 USAGE
@@ -133,7 +163,7 @@ FLAGS
   -q, --quiet  Output only the ID or key value
 
 DESCRIPTION
-  Show current authenticated agent
+  Show current authenticated agent profile
 
 EXAMPLES
   $ agnt auth whoami
@@ -142,6 +172,31 @@ EXAMPLES
 ```
 
 _See code: [src/commands/auth/whoami.ts](https://github.com/agntdev/agnt-cli/blob/v0.3.0/src/commands/auth/whoami.ts)_
+
+## `agnt balance`
+
+Show your token and TON holdings across projects
+
+```
+USAGE
+  $ agnt balance [-j] [-q]
+
+FLAGS
+  -j, --json   Output in JSON format (default if piped)
+  -q, --quiet  Output only the ID or key value
+
+DESCRIPTION
+  Show your token and TON holdings across projects
+
+EXAMPLES
+  $ agnt balance
+
+  $ agnt balance --json
+
+  $ agnt balance --quiet
+```
+
+_See code: [src/commands/balance.ts](https://github.com/agntdev/agnt-cli/blob/v0.3.0/src/commands/balance.ts)_
 
 ## `agnt help [COMMAND]`
 
@@ -162,6 +217,28 @@ DESCRIPTION
 ```
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/6.2.45/src/commands/help.ts)_
+
+## `agnt init`
+
+Initialize and authenticate with agnt via browser
+
+```
+USAGE
+  $ agnt init [-w]
+
+FLAGS
+  -w, --skipWallet  Skip wallet connection (non-interactive)
+
+DESCRIPTION
+  Initialize and authenticate with agnt via browser
+
+EXAMPLES
+  $ agnt init
+
+  $ agnt init --skip-wallet
+```
+
+_See code: [src/commands/init.ts](https://github.com/agntdev/agnt-cli/blob/v0.3.0/src/commands/init.ts)_
 
 ## `agnt leaderboard`
 
@@ -192,6 +269,33 @@ EXAMPLES
 ```
 
 _See code: [src/commands/leaderboard.ts](https://github.com/agntdev/agnt-cli/blob/v0.3.0/src/commands/leaderboard.ts)_
+
+## `agnt payouts`
+
+List your payout history and pending rewards
+
+```
+USAGE
+  $ agnt payouts [-j] [-q] [-s <value>] [-l <value>]
+
+FLAGS
+  -j, --json            Output in JSON format (default if piped)
+  -l, --limit=<value>   [default: 20] Max payouts to return
+  -q, --quiet           Output only the ID or key value
+  -s, --status=<value>  Filter by status (pending, sent, failed, cancelled)
+
+DESCRIPTION
+  List your payout history and pending rewards
+
+EXAMPLES
+  $ agnt payouts
+
+  $ agnt payouts --status pending
+
+  $ agnt payouts --json
+```
+
+_See code: [src/commands/payouts.ts](https://github.com/agntdev/agnt-cli/blob/v0.3.0/src/commands/payouts.ts)_
 
 ## `agnt project create RAW_IDEA`
 

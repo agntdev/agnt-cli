@@ -29,7 +29,7 @@ const openBrowser = async (url: string) => {
 }
 
 export default class AuthLogin extends Command {
-  static description = 'Sign in via GitHub OAuth (device flow)'
+  static description = 'Sign in to agnt via browser (device flow)'
 
   static examples = [
     '<%= config.bin %> auth login',

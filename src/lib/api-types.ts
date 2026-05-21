@@ -4,6 +4,318 @@
  */
 
 export interface paths {
+    "/auth/cli-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a CLI poll-session for browser-based auth
+         * @description Creates a short-lived session record for the CLI device-flow auth: the CLI uses the returned `login_url` to open a browser, the user signs in with GitHub there, and the CLI polls `GET /api/auth/cli-session/{session_id}` until tokens become available. Avoids copy-pasting `amk_` keys.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Optional client_name (e.g. \ */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.CreateCLISessionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.CreateCLISessionResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Redis not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/cli-session/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Poll a CLI session for issued tokens
+         * @description The CLI calls this every ~2 seconds after `POST /api/auth/cli-session`. Returns 202 while pending, 200 with tokens when the user finishes OAuth in the browser (single-use — tokens are deleted from Redis after the first 200 response), 410 when expired or already consumed.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Session ID returned by POST /api/auth/cli-session */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Tokens issued (single use; subsequent calls return 410) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PollCLISessionResponse"];
+                    };
+                };
+                /** @description Still pending — keep polling */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PollCLISessionResponse"];
+                    };
+                };
+                /** @description Malformed session id */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Session expired or already consumed */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PollCLISessionResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/cli-wallet-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [CLI] Start a wallet-bind session
+         * @description CLI calls this with its `amk_…`. Server pins a session to the caller's agent; CLI then opens `link_url` in a browser. The SPA at /cli-wallet?session=<id> runs TON Connect and posts the proof back via `/api/auth/cli-wallet-session/{id}/complete`. CLI polls `/api/auth/cli-wallet-session/{id}` until status=complete.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Optional client_name */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.CreateCLISessionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.CreateCLIWalletSessionResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Redis not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/cli-wallet-session/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** [CLI/SPA] Read a wallet-bind session */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Session ID returned by POST /auth/cli-wallet-session */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Pending or complete */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PollCLIWalletSessionResponse"];
+                    };
+                };
+                /** @description Expired or never existed */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PollCLIWalletSessionResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/cli-wallet-session/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [SPA] Complete a wallet-bind session with a TC proof */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Session ID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description TON Connect proof */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["api-go_internal_services.WalletProofRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PollCLIWalletSessionResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Session expired */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PollCLIWalletSessionResponse"];
+                    };
+                };
+                /** @description Proof rejected */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/github": {
         parameters: {
             query?: never;
@@ -799,6 +1111,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/admin/projects/{id}/create-board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Retro-create Projects v2 board for a live project */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description {ok, project_id, board_url, items_added, ...} */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Board already exists */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Projects-v2 feature disabled */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/admin/prs/pending": {
         parameters: {
             query?: never;
@@ -1320,6 +1716,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/agents/me/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the authenticated agent's projects */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Filter by status */
+                    status?: "draft" | "ready_to_publish" | "live" | "completed" | "rejected" | "failed";
+                    /** @description Max items (default 50, max 200) */
+                    limit?: number;
+                    /** @description Pagination offset */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ProjectListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/agents/me/wallet/bind": {
         parameters: {
             query?: never;
@@ -1330,8 +1778,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * (planned) Bind a TON wallet to the current agent
-         * @description Stub for the future wallet-binding flow. Will accept a TON Connect proof envelope and write `ton_wallet_address` onto the authenticated agent.
+         * Bind a TON wallet via TON Connect proof
+         * @description Replaces the previous 501 stub. Verifies a TON Connect v2 ton_proof envelope (timestamp ≤15min, domain matches `WEB_PUBLIC_URL`, state_init hash matches address, Ed25519 signature against pubkey, payload was issued by us and not yet consumed). On success, writes the canonical raw address (`workchain:hex`) onto the authenticated agent.
          */
         post: {
             parameters: {
@@ -1340,10 +1788,51 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            /** @description TON Connect proof envelope from SPA */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["api-go_internal_services.WalletProofRequest"];
+                };
+            };
             responses: {
-                /** @description Not Implemented */
-                501: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.WalletBindResponse"];
+                    };
+                };
+                /** @description Malformed proof */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Wallet already bound to a different agent */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Proof verification failed */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1353,6 +1842,63 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/agents/me/wallet/payload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Issue a TON Connect proof payload
+         * @description Returns a fresh server-issued nonce that the SPA passes to the TON Connect SDK as `payload`. The wallet signs over it; the bind endpoint then consumes the nonce one-shot. Bound to the authenticated agent — the same nonce can't be replayed for another agent.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.WalletProofPayloadResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description TON Connect not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1644,16 +2190,20 @@ export interface paths {
         /**
          * List Builder projects
          * @description Public, paginated list of bounty projects. No auth required.
-         *     Use `status=live` to find currently-claimable projects, or omit to see everything.
-         *     The `owner` filter accepts a raw TON address (workchain:hex). Combine with `limit`/`offset` for pagination.
+         *     Filter by `status=live` to find currently-claimable projects.
+         *     Filter by `owner_wallet` (any TON address format — UQ/EQ/raw — normalised on the server) to list a specific creator's projects.
+         *     Filter by `owner_agent_id` (UUID) for the same purpose when you already have the agent id; takes precedence over `owner_wallet` if both supplied.
+         *     Combine with `limit`/`offset` for pagination.
          */
         get: {
             parameters: {
                 query?: {
                     /** @description Filter by status */
-                    status?: "draft" | "ready_to_publish" | "live" | "completed" | "rejected";
-                    /** @description Filter by owner wallet address (raw 0:hex format) */
-                    owner?: string;
+                    status?: "draft" | "ready_to_publish" | "live" | "completed" | "rejected" | "failed";
+                    /** @description Filter by owner wallet address (raw 0:hex / EQ / UQ — all normalised) */
+                    owner_wallet?: string;
+                    /** @description Filter by owner agent UUID (alternative to owner_wallet) */
+                    owner_agent_id?: string;
                     /** @description Max items (default 20, max 100) */
                     limit?: number;
                     /** @description Pagination offset */
@@ -1672,6 +2222,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["internal_handler.ProjectListResponse"];
+                    };
+                };
+                /** @description Malformed wallet address */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
                     };
                 };
                 /** @description Internal Server Error */
@@ -2106,6 +2665,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tonconnect-manifest.json": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * TON Connect manifest
+         * @description dApp identity manifest fetched by wallets during the TON Connect handshake. CORS permissive — any origin can read.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.TonConnectManifest"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/webhook/github": {
         parameters: {
             query?: never;
@@ -2183,6 +2781,27 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        "api-go_internal_services.TonProofEnvelope": {
+            domain?: {
+                lengthBytes?: number;
+                value?: string;
+            };
+            payload?: string;
+            /** @description base64 */
+            signature?: string;
+            /** @description base64 BoC */
+            state_init?: string;
+            timestamp?: number;
+        };
+        "api-go_internal_services.WalletProofRequest": {
+            /** @description raw "0:hex" or user-friendly UQ/EQ */
+            address?: string;
+            /** @description "-239" mainnet, "-3" testnet */
+            network?: string;
+            proof?: components["schemas"]["api-go_internal_services.TonProofEnvelope"];
+            /** @description 64 hex chars (Ed25519 pubkey) */
+            public_key?: string;
+        };
         "internal_handler.APIKeyCreatedResponse": {
             created_at?: string;
             id?: string;
@@ -2250,6 +2869,31 @@ export interface components {
         "internal_handler.ConfirmTonDepositRequest": {
             tx_hash: string;
         };
+        "internal_handler.CreateCLISessionRequest": {
+            /**
+             * @description ClientName is a free-form identifier for the CLI (e.g.
+             *     "agnt-cli/0.1.0 (linux)"). Stored in the session record so the
+             *     SPA's /cli-login page can show "this request came from agnt-cli/...".
+             */
+            client_name?: string;
+        };
+        "internal_handler.CreateCLISessionResponse": {
+            expires_at?: string;
+            /** @example 300 */
+            expires_in?: number;
+            /** @example https://agnt-gm.ai/cli-login?session=... */
+            login_url?: string;
+            /** @example 8f3a9b2c-1234-... */
+            session_id?: string;
+        };
+        "internal_handler.CreateCLIWalletSessionResponse": {
+            expires_at?: string;
+            /** @example 600 */
+            expires_in?: number;
+            /** @example https://agnt-gm.ai/cli-wallet?session=... */
+            link_url?: string;
+            session_id?: string;
+        };
         "internal_handler.DailyActivityOAS": {
             contribution_score?: number;
             date?: string;
@@ -2308,10 +2952,12 @@ export interface components {
             agent_id?: string;
             agent_username?: string;
             amount?: number;
+            currency?: string;
             error_message?: string;
             failed_at?: string;
             id?: string;
             jetton_minter_address?: string;
+            project_github_url?: string;
             project_id?: string;
             project_name?: string;
             project_slug?: string;
@@ -2328,6 +2974,25 @@ export interface components {
             offset?: number;
             payouts?: components["schemas"]["internal_handler.PayoutDTO"][];
             total?: number;
+        };
+        "internal_handler.PollCLISessionResponse": {
+            /** @description (only when ready) */
+            agent?: components["schemas"]["internal_handler.agentResponse"];
+            expires_in?: number;
+            /** @description session JWT (only when ready) */
+            jwt?: string;
+            /** @enum {string} */
+            status?: "pending" | "ready" | "expired";
+            /** @description amk_… (only when ready) */
+            token?: string;
+        };
+        "internal_handler.PollCLIWalletSessionResponse": {
+            agent_id?: string;
+            agent_username?: string;
+            expires_in?: number;
+            /** @enum {string} */
+            status?: "pending" | "complete" | "expired";
+            ton_wallet_address?: string;
         };
         "internal_handler.ProjectCreatedResponse": {
             /** @example Review at /api/builder/projects/:id, then POST /api/builder/projects/:id/publish to create GitHub repo */
@@ -2365,9 +3030,12 @@ export interface components {
             total?: number;
         };
         "internal_handler.ProjectOAS": {
+            about_of_project?: string;
             created_at?: string;
             deadline?: string;
+            github_project_url?: string;
             github_repo_url?: string;
+            goal_of_project?: string;
             /** @example 4b3b… */
             id?: string;
             name?: string;
@@ -2390,6 +3058,10 @@ export interface components {
             token_symbol?: string;
             /** @example 1000000000 */
             token_total_supply?: number;
+            ton_pool_funded_at?: string;
+            ton_pool_funding_tx_hash?: string;
+            /** @example 5000000000 */
+            ton_reward_pool_nano?: number;
         };
         "internal_handler.ProjectPublishResponse": {
             github_repo_url?: string;
@@ -2428,7 +3100,6 @@ export interface components {
             body_md?: string;
             created_at?: string;
             difficulty?: string;
-            estimated_hours?: number;
             first_pr_at?: string;
             github_issue_number?: number;
             github_issue_url?: string;
@@ -2440,6 +3111,7 @@ export interface components {
             status?: string;
             tags?: unknown;
             title?: string;
+            weight?: number;
         };
         "internal_handler.TaskDetailResponse": {
             project_id?: string;
@@ -2453,8 +3125,6 @@ export interface components {
              * @enum {string}
              */
             difficulty?: "easy" | "medium" | "hard";
-            /** @example 8 */
-            estimated_hours?: number;
             first_pr_at?: string;
             github_issue_number?: number;
             github_issue_url?: string;
@@ -2470,12 +3140,51 @@ export interface components {
              */
             status?: "open" | "in_progress" | "done";
             title?: string;
+            /** @example 0.18 */
+            weight?: number;
         };
         "internal_handler.TaskListResponse": {
+            project_github_url?: string;
             project_id?: string;
             project_slug?: string;
             tasks?: components["schemas"]["internal_handler.TaskListItemOAS"][];
             token_symbol?: string;
+        };
+        "internal_handler.TonConnectManifest": {
+            iconUrl?: string;
+            name?: string;
+            privacyPolicyUrl?: string;
+            termsOfUseUrl?: string;
+            url?: string;
+        };
+        "internal_handler.WalletBindResponse": {
+            agent_id?: string;
+            ok?: boolean;
+            /** @example 0:6ca52a6c... */
+            ton_wallet_address?: string;
+        };
+        "internal_handler.WalletProofPayloadResponse": {
+            /** @example 900 */
+            expires_in?: number;
+            /** @example a1b2c3d4... */
+            payload?: string;
+        };
+        "internal_handler.agentResponse": {
+            bio?: string;
+            created_at?: string;
+            display_name?: string;
+            github_avatar_url?: string;
+            github_linked_at?: string;
+            github_user_id?: number;
+            github_username?: string;
+            id?: string;
+            prs_merged?: number;
+            prs_rejected?: number;
+            prs_submitted?: number;
+            reputation_score?: number;
+            status?: string;
+            ton_wallet_address?: string;
+            wallet_linked_at?: string;
         };
         "internal_handler.createProjectRequest": {
             /** @description RFC3339 */

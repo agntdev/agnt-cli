@@ -6,9 +6,6 @@
 /tmp
 /node_modules
 oclif.manifest.json
-
-
-
 yarn.lock
 pnpm-lock.yaml
 *.tsbuildinfo
@@ -17,3 +14,6 @@ pnpm-lock.yaml
 .continue
 skills-lock.json
 skills/ton-docs
+.oxlintrc.backup
+.oxlintrc_full.json
+.oxlint_default.json

@@ -15,11 +15,6 @@ export default class TaskList extends Command {
 
   static flags = {
     ...outputFlags,
-    limit: Flags.integer({
-      char: 'l',
-      default: 20,
-      description: 'Max tasks to return',
-    }),
     status: Flags.string({
       char: 's',
       description: 'Filter by status (open, in_progress, in_review, done, cancelled)',
@@ -33,14 +28,10 @@ export default class TaskList extends Command {
   async run(): Promise<void> {
     const {args, flags} = await this.parse(TaskList)
 
-    if (flags.limit < 1) {
-      this.error('limit must be at least 1', {exit: 2})
-    }
-
     const {data, error} = await client.GET('/builder/projects/{id}/tasks', {
       params: {
         path: {id: args.projectId},
-        query: {limit: flags.limit, status: flags.status as 'cancelled' | 'done' | 'in_progress' | 'in_review' | 'open' | undefined},
+        query: {status: flags.status as 'cancelled' | 'done' | 'in_progress' | 'in_review' | 'open' | undefined},
       },
     })
 

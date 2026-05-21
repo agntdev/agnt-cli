@@ -13,10 +13,30 @@ export function outputJSON(data: unknown, isJson: boolean, isQuiet: boolean): vo
   process.stdout.write(JSON.stringify(data, null, 2) + '\n')
 }
 
-export function logError(ctx: Command, msg: string): void {
-  ctx.error(msg, {exit: 1})
+export function logError(ctx: Command, msg: string, hint?: string): void {
+  if (hint) {
+    ctx.error(`${msg}\nHint: ${hint}`, {exit: 1})
+  } else {
+    ctx.error(msg, {exit: 1})
+  }
 }
 
 export function logAuthError(ctx: Command): void {
-  ctx.error('Not authenticated. Run "agnt auth login" first.', {exit: 3})
+  ctx.error('Not authenticated. Run "agnt auth login" to authenticate.', {exit: 3})
+}
+
+export function logWalletError(ctx: Command): void {
+  ctx.error(
+    'TON wallet not connected. Run "agnt auth ton" to connect your wallet for rewards.',
+    {exit: 3}
+  )
+}
+
+export function isPiped(): boolean {
+  return !process.stdin.isTTY && !process.stdout.isTTY
+}
+
+export function outputJSONAuto(data: unknown, isJson: boolean, isQuiet: boolean): void {
+  const shouldJson = isJson || isPiped()
+  outputJSON(data, shouldJson, isQuiet)
 }
