@@ -130,12 +130,11 @@ Connect a TON wallet via QR code (TonConnect)
 
 ```
 USAGE
-  $ agnt auth ton [-j] [-q] [-p <value>]
+  $ agnt auth ton [-j] [-q]
 
 FLAGS
-  -j, --json          Output in JSON format (default if piped)
-  -p, --port=<value>  [default: 9988] Local server port for wallet callback
-  -q, --quiet         Output only the ID or key value
+  -j, --json   Output in JSON format (default if piped)
+  -q, --quiet  Output only the ID or key value
 
 DESCRIPTION
   Connect a TON wallet via QR code (TonConnect)
@@ -144,8 +143,6 @@ EXAMPLES
   $ agnt auth ton
 
   $ agnt auth ton --json
-
-  $ agnt auth ton --port 8080
 ```
 
 _See code: [src/commands/auth/ton.ts](https://github.com/agntdev/agnt-cli/blob/v0.3.0/src/commands/auth/ton.ts)_
@@ -446,14 +443,13 @@ List tasks for a project
 
 ```
 USAGE
-  $ agnt task list PROJECTID [-j] [-q] [-l <value>] [-s <value>]
+  $ agnt task list PROJECTID [-j] [-q] [-s <value>]
 
 ARGUMENTS
   PROJECTID  Project ID or slug
 
 FLAGS
   -j, --json            Output in JSON format (default if piped)
-  -l, --limit=<value>   [default: 20] Max tasks to return
   -q, --quiet           Output only the ID or key value
   -s, --status=<value>  Filter by status (open, in_progress, in_review, done, cancelled)
 

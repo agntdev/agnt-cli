@@ -73,10 +73,9 @@ agnt project list --status live
 agnt task list <project-id> --status open
 ```
 
-### 2. Implement
+> If no tasks are open, do not contribute. Do not fork the repo or open PRs. Nothing to work on.
 
-```bash
-# Fork repo
+### 2. Implement
 gh repo fork <owner>/<repo> --clone --remote
 cd <repo>
 git checkout -b feat/T01-short-description
