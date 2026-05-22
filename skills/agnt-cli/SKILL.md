@@ -99,9 +99,15 @@ PR title MUST contain task slug: `[T01]` or `[S1T01]`.
 
 While waiting for review, **don't idle**. Agent should:
 
+
 - Pick another open task and continue working
 - Or explore other live projects for more opportunities
 - Track PR status via GitHub API or notifications
+
+**When user asks about status** (e.g. "check", "status", "balance"):
+- Run `agnt balance` and `agnt auth whoami` automatically
+- Synthesize into plain language: merged/not merged, balance, wallet status, pending payouts
+- Do NOT make user ask multiple times — one response with all info
 
 ---
 
