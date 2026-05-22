@@ -70,7 +70,7 @@ agnt task show <project-id> <slug>
 **Create the files the spec asks for — NOT `tasks/<slug>.md`.**
 
 ```bash
-gh repo fork <owner>/<repo> --clone --remote
+gh repo fork <owner>/<repo> --clone
 cd <repo>
 git checkout -b feat/T01-short-description
 
