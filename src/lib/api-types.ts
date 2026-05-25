@@ -595,6 +595,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/admin/backfill-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Backfill GitHub Pages for all eligible projects */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { ok, processed, succeeded, skipped, failures } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/admin/daily-snapshot": {
         parameters: {
             query?: never;
@@ -661,6 +715,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/admin/meta-projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Admin] Create a meta-project (platform site itself)
+         * @description Creates a project of kind=meta bound to an existing repo. No jetton, no logo, no auto-merge.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Project metadata + existing repo URL */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.CreateMetaProjectRequest"];
+                };
+            };
+            responses: {
+                /** @description { ok, project } */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description validation error */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description slug already in use */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/admin/payouts": {
         parameters: {
             query?: never;
@@ -679,6 +813,131 @@ export interface paths {
                     status?: string;
                     /** @description Filter by project UUID */
                     project_id?: string;
+                    /** @description Page size (default 50, max 500) */
+                    limit?: number;
+                    /** @description Page offset (default 0) */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PayoutListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/payouts/dispatch-now": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Dispatch all pending payouts on-chain immediately */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { considered, sent, below_min, no_wallet, failed, duration_ms } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Sender not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/payouts/needs-reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * [Admin] List payouts awaiting on-chain reconciliation
+         * @description Pending payouts with a dispatch marker — ambiguous sends that must be checked on-chain before resending or reversing.
+         */
+        get: {
+            parameters: {
+                query?: {
                     /** @description Page size (default 50, max 500) */
                     limit?: number;
                     /** @description Page offset (default 0) */
@@ -778,6 +1037,84 @@ export interface paths {
                 };
                 /** @description Worker not configured */
                 503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/payouts/{id}/clear-dispatch-marker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Admin] Clear a payout's dispatch marker to allow safe retry
+         * @description Use ONLY after verifying on-chain that no TX was sent. Returns the row to clean-pending so the sender retries it.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Payout UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PayoutDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1195,6 +1532,626 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/admin/projects/{id}/deadline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** [Admin] Extend (or shorten) a project's deadline */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description New deadline (RFC3339) */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.ExtendDeadlineRequest"];
+                };
+            };
+            responses: {
+                /** @description { ok, project_id, old_deadline, new_deadline } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description deadline must be RFC3339 / must be in future */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description new deadline earlier than current (need allow_shorter) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/builder/admin/projects/{id}/deploy-jetton": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Deploy or retry-deploy a project's jetton master */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { ok, master_address, tx_hash, owner_mint, platform_mint, duplicate } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project has minter already / owner wallet missing */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Jetton deployer not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/projects/{id}/enable-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Enable GitHub Pages for one project + persist live_url */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { ok, project_id, live_url, was_already_set } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description GitHub API failure */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/projects/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Admin] Force-publish a ready_to_publish project
+         * @description Bypasses the owner check; otherwise identical to /projects/:id/publish. Use when auto-publish didn't fire or the owner is unavailable.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description {ok, project, repo_url} */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description project not ready_to_publish */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description TON pool not funded yet */
+                412: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description publish failed */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/projects/{id}/regenerate-logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Re-run the jetton logo generation for a project */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { ok, project_id, logo_url, fallback } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Bad request body */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Logo generator not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/projects/{id}/stages/{n}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Activate a funded stage (create tasks + mint) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                    /** @description Stage number */
+                    n: number;
+                };
+                cookie?: never;
+            };
+            /** @description Tasks + flags */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.ActivateStageRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.StageDTO"];
+                    };
+                };
+                /** @description stage not in funded state */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/projects/{id}/stages/{n}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Close a stage manually */
+        post: {
+            parameters: {
+                query?: {
+                    /** @description Skip the all-tasks-merged + no-pending-payouts checks */
+                    force?: boolean;
+                };
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                    /** @description Stage number */
+                    n: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.StageDTO"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/projects/{id}/sync-board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Sync missing items into a project's existing Projects v2 board */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description {ok, project_id, board_url, items_added, items_total} */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project has no board yet — use /create-board */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Projects-v2 feature disabled */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/admin/prs/pending": {
         parameters: {
             query?: never;
@@ -1248,6 +2205,92 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/prs/reingest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Reingest a PR that was orphaned by a matching bug */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description {owner, repo, number} */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description { ok, message, pr_number } */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Bad request body */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description PR not found on GitHub */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Pipeline not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -1338,6 +2381,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/admin/prs/{id}/backfill-grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Back-fill ledger grants on an already-merged PR */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description PR UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { ok, pr_id } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description PR not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description PR is not in status=merged */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/admin/prs/{id}/reject": {
         parameters: {
             query?: never;
@@ -1403,6 +2521,213 @@ export interface paths {
                 };
                 /** @description PR already merged or no repo */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/prs/{id}/revalidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Revalidate a PR (optionally forcing the reviewer container) */
+        post: {
+            parameters: {
+                query?: {
+                    /** @description 1/true → bypass size router, always run opencode reviewer */
+                    force_reviewer?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description PR UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { ok, pr_id, run_started, force_reviewer } */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description PR not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description PR already merged or closed; revalidation skipped */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/seed-spa-workflows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Seed Pages workflow for every SPA project */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { ok, processed, seeded, skipped_or_failed } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/tasks/{id}/sync-spec": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Write tasks/<slug>.md to the project repo */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Task UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description {ok, slug, file_path, file_existed} */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Task or project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description GitHub service not configured */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1966,7 +3291,7 @@ export interface paths {
         };
         /**
          * Get an agent's holdings (token + TON, per project)
-         * @description Aggregates the token ledger by (project, currency). For each project the agent has activity in, returns the meme-token balance (`balance_token`, raw token units — multiply by `10^token_decimals` for human units) AND the TON reward-pool balance (`balance_ton_nano`, in nano-TON — divide by 1e9 for TON).
+         * @description Aggregates the token ledger by (project, currency). For each project the agent has activity in, returns BOTH raw and human-decimal forms of the meme-token + TON balances: `balance_token` / `balance_token_human` (raw and human form of the project jetton, decimals=9) and `balance_ton_nano` / `balance_ton` (raw nano and human TON).
          *     Public, no auth. Sorted by token balance DESC.
          */
         get: {
@@ -2049,6 +3374,60 @@ export interface paths {
                     };
                 };
                 /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/agents/{id}/payouts/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Aggregated payout dashboard for one agent
+         * @description Lifetime + last 7d/30d totals, pending balance, and a per-ISO-week bucketed array suitable for a chart. Status semantics: `sent` rows are counted in earnings; `pending` rows in the pending block; failed/cancelled rows are ignored.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description How many trailing weeks to return (default 12, max 52) */
+                    weeks?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Agent UUID or GitHub username */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.AgentPayoutSummary"];
+                    };
+                };
+                /** @description Agent not found */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2162,6 +3541,322 @@ export interface paths {
                     };
                 };
                 /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my notifications (feed + history)
+         * @description Newest-first notifications for the authenticated agent. Use ?unread=true to filter to unread only; paginate with limit/offset for the history view.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Only unread */
+                    unread?: boolean;
+                    /** @description Page size (default 20, max 100) */
+                    limit?: number;
+                    /** @description Page offset (default 0) */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.NotificationListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark all my notifications read */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { ok, updated } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My unread notification count (badge) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { count } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark one notification read */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Notification ID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { ok } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/owner-payments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Poll an owner-payment intent */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Payment intent UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.OwnerPaymentResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not your project's intent */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/payouts/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * When will the next payout batch run?
+         * @description Returns the configured daily payout window plus the resolved next run timestamp.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PayoutScheduleResponse"];
+                    };
+                };
+                /** @description Internal error computing next run */
                 500: {
                     headers: {
                         [name: string]: unknown;
@@ -2362,6 +4057,128 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/projects/{id}/auto-merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Toggle PR auto-merge for this project
+         * @description Owner switches between "auto-merge first valid PR" and "always manual review".
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description New value */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.SetAutoMergeRequest"];
+                };
+            };
+            responses: {
+                /** @description {ok, project_id, auto_merge_enabled} */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not the project owner */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/builder/projects/{id}/jetton-metadata.json": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Off-chain jetton metadata (TEP-64) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Standard TEP-64 metadata */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/projects/{id}/leaderboard": {
         parameters: {
             query?: never;
@@ -2417,6 +4234,279 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/lock-jetton-admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Renounce jetton-master admin slot (freeze token supply) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description {ok, project_id, locked_at, tx_hash, note} */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not the project owner */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description On-chain drop_admin failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Jetton deployer not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/payouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List payouts on one project
+         * @description Public, paginated. Use status=sent for the "who got paid" feed.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Filter by status: pending|sent|failed|cancelled */
+                    status?: string;
+                    /** @description Page size (default 50, max 200) */
+                    limit?: number;
+                    /** @description Page offset (default 0) */
+                    offset?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PayoutListResponse"];
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/payouts/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Aggregated payout dashboard for one project */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Trailing weeks (default 12, max 52) */
+                    weeks?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ProjectPayoutSummary"];
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch the long-form plan fields of a ready-to-publish project */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Optional partial fields */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.EditProjectPlanRequest"];
+                };
+            };
+            responses: {
+                /** @description {ok, project_id, project} */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not project owner */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Project not ready_to_publish */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/builder/projects/{id}/publish": {
@@ -2506,6 +4596,543 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/projects/{id}/stages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all stages of a project
+         * @description Public, returns stages in stage_number ASC order.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { stages: []StageDTO } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create the next stage of a project
+         * @description Owner-only. Refused if the previous stage isn't closed.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description New stage budget */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.CreateStageRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.StageDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not the project owner */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Previous stage not closed yet */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/stages/preview-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draft tasks via LLM for a fresh new stage (preview only, no DB write) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Brief + approx_count + stage_ton_nano */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.PreviewTasksRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PreviewNewStageResponse"];
+                    };
+                };
+                /** @description Brief invalid / moderation reject */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not project owner */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Rate limit: 10 calls / hour */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description LLM transport failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/stages/{n}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one stage by number */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                    /** @description Stage number (1-based) */
+                    n: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.StageDTO"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/stages/{n}/add-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add tasks to an active stage (creates a payment intent) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                    /** @description Stage number */
+                    n: number;
+                };
+                cookie?: never;
+            };
+            /** @description Tasks + delta_ton_nano + delta_jetton_units */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["api-go_internal_services.AddTasksInput"];
+                };
+            };
+            responses: {
+                /** @description Validation passed; intent created. Owner must pay. */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.AddTasksHandlerResponse"];
+                    };
+                };
+                /** @description Validation failed (Layer 1 or LLM) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.AddTasksHandlerErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not project owner */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Project or stage not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Stage not in 'active' status */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Service not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/stages/{n}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Owner] Finish a stage early (no supply lock)
+         * @description Owner closes a stage before its deadline. The project stays live and the token supply is NOT locked — start a new stage afterwards, or call complete to finish the project. Unfilled task budget is refunded only at project completion.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                    /** @description Stage number */
+                    n: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.StageDTO"];
+                    };
+                };
+                /** @description Not the project owner */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Project not live / stage not closable */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/stages/{n}/preview-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draft tasks via LLM for an existing active stage (preview only, no DB write) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                    /** @description Stage number (must be 'active') */
+                    n: number;
+                };
+                cookie?: never;
+            };
+            /** @description Brief + approx_count + delta_ton_nano */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.PreviewTasksRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PreviewAddTasksResponse"];
+                    };
+                };
+                /** @description Brief invalid / moderation reject */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not project owner */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Rate limit: 10 calls / hour. retry_after_seconds in body. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description LLM transport failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/projects/{id}/tasks": {
         parameters: {
             query?: never;
@@ -2554,7 +5181,98 @@ export interface paths {
                 };
             };
         };
-        put?: never;
+        /** Replace the task list of a ready-to-publish project */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description New task list + optional skip_coherence */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handler.EditProjectTasksRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.EditProjectTasksResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.EditProjectTasksError"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not project owner */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Project status is not 'ready_to_publish' (data.current_status set) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Rate limit (30/hour/agent) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description LLM coherence check failed (transport) */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
         post?: never;
         delete?: never;
         options?: never;
@@ -2665,6 +5383,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/stats/payouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Platform-wide payout stats
+         * @description Aggregated across ALL projects + agents. Use for the homepage transparency widget.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Trailing weeks (default 12, max 52) */
+                    weeks?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.PlatformPayoutStats"];
+                    };
+                };
+                /** @description Internal error aggregating stats */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tonconnect-manifest.json": {
         parameters: {
             query?: never;
@@ -2673,8 +5442,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * TON Connect manifest
-         * @description dApp identity manifest fetched by wallets during the TON Connect handshake. CORS permissive — any origin can read.
+         * TON Connect manifest (legacy — prefer the GitHub raw URL)
+         * @description dApp identity manifest. Both this endpoint and the GitHub raw URL serve the same JSON; new integrations should use the raw URL so the manifest is edited via PR. CORS permissive — any origin can read.
          */
         get: {
             parameters: {
@@ -2692,6 +5461,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["internal_handler.TonConnectManifest"];
+                    };
+                };
+                /** @description WEB_PUBLIC_URL unset; manifest can't be assembled */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
                     };
                 };
             };
@@ -2781,6 +5559,64 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        "api-go_internal_models.BuilderTask": {
+            body_md?: string;
+            created_at?: string;
+            difficulty?: string;
+            first_pr_at?: string;
+            github_issue_number?: number;
+            github_issue_url?: string;
+            id?: string;
+            project_id?: string;
+            reward_amount?: number;
+            slug?: string;
+            solved_by_agent_id?: string;
+            solved_by_pr_id?: string;
+            /**
+             * @description StageID — multi-stage projects (see migration 00014). Tasks
+             *     generated at /publish belong to stage 1 (auto-created); tasks
+             *     generated by /admin/projects/:id/stages/:n/activate go in that
+             *     stage. Nullable for legacy rows before the migration's backfill
+             *     ran; the payout worker falls back to the project's aggregate
+             *     pool when StageID is nil.
+             */
+            stage_id?: string;
+            status?: string;
+            /** @description PG text[] surfaced as JSON */
+            tags?: number[];
+            title?: string;
+            /**
+             * @description Weight ∈ [0, 1]. The sum of weights across all tasks of a project
+             *     equals 1.0 (validated at plan-gen time, with a 1e-6 epsilon). Both
+             *     the meme-jetton grant and the TON reward share for solving a task
+             *     are computed from this weight at PR-merge time. RewardAmount is
+             *     kept as a denormalised cache (= weight × (1 − owner_share_bps/10000)
+             *     × token_total_supply, in raw token units) so existing consumers
+             *     don't break.
+             */
+            weight?: number;
+        };
+        "api-go_internal_services.AddTasksInput": {
+            delta_jetton_units?: number;
+            delta_ton_nano?: number;
+            /**
+             * @description SkipCoherence lets owner bypass the Layer-2 LLM check after
+             *     reviewing its rejections themselves. Layer 1 (deterministic
+             *     rules) still runs and cannot be skipped — that's the floor.
+             */
+            skip_coherence?: boolean;
+            tasks?: components["schemas"]["api-go_internal_services.AddTasksTaskInput"][];
+        };
+        "api-go_internal_services.AddTasksTaskInput": {
+            body_md?: string;
+            /** @description "trivial"|"easy"|"medium"|"hard" */
+            difficulty?: string;
+            /** @description optional — auto-generated if blank */
+            slug?: string;
+            title?: string;
+            /** @description share of delta_ton + delta_jetton; must sum to 1.0 across all new */
+            weight_within_new?: number;
+        };
         "api-go_internal_services.TonProofEnvelope": {
             domain?: {
                 lengthBytes?: number;
@@ -2792,6 +5628,10 @@ export interface components {
             /** @description base64 BoC */
             state_init?: string;
             timestamp?: number;
+        };
+        "api-go_internal_services.ValidationError": {
+            field?: string;
+            message?: string;
         };
         "api-go_internal_services.WalletProofRequest": {
             /** @description raw "0:hex" or user-friendly UQ/EQ */
@@ -2823,6 +5663,45 @@ export interface components {
             /** @example amk_abcd */
             prefix?: string;
             revoked_at?: string;
+        };
+        "internal_handler.ActivateStageRequest": {
+            /**
+             * @description SkipMint defaults false. When true, we don't try to mint extra
+             *     jettons even if `jetton_mint_amount > 0` — useful when admin
+             *     already minted out-of-band and just wants to record activation.
+             */
+            skip_mint?: boolean;
+            tasks?: components["schemas"]["internal_handler.ActivateStageTask"][];
+        };
+        "internal_handler.ActivateStageTask": {
+            body_md: string;
+            difficulty?: string;
+            slug?: string;
+            title: string;
+            /** @description 0..1, summed across stage must be ≤ 1 */
+            weight: number;
+        };
+        "internal_handler.AddTasksHandlerErrorResponse": {
+            error?: string;
+            layer1_errors?: components["schemas"]["api-go_internal_services.ValidationError"][];
+            llm_reasons?: string[];
+            llm_reject?: boolean;
+            ok?: boolean;
+        };
+        "internal_handler.AddTasksHandlerResponse": {
+            executed?: boolean;
+            existing_task_count?: number;
+            /**
+             * @description Intent is the payment intent to satisfy (delta_ton > 0). Nil/omitted
+             *     when delta_ton == 0 — in that case the add was applied directly and
+             *     Executed is true (no payment needed).
+             */
+            intent?: components["schemas"]["internal_handler.OwnerPaymentResponse"];
+            new_mint_amount?: number;
+            new_task_count?: number;
+            new_ton_pool_nano?: number;
+            note?: string;
+            ok?: boolean;
         };
         "internal_handler.AgentBalanceResponse": {
             agent_id?: string;
@@ -2862,6 +5741,16 @@ export interface components {
             ton_wallet_address?: string;
             wallet_linked_at?: string;
         };
+        "internal_handler.AgentPayoutSummary": {
+            agent_id?: string;
+            agent_username?: string;
+            last_30d?: components["schemas"]["internal_handler.CurrencyAggregate"];
+            last_7d?: components["schemas"]["internal_handler.CurrencyAggregate"];
+            lifetime?: components["schemas"]["internal_handler.CurrencyAggregate"];
+            pending?: components["schemas"]["internal_handler.CurrencyAggregate"];
+            projects_paid?: number;
+            weekly?: components["schemas"]["internal_handler.WeeklyBucket"][];
+        };
         "internal_handler.AgentTransactionsResponse": {
             agent_id?: string;
             transactions?: components["schemas"]["internal_handler.LedgerEntryOAS"][];
@@ -2894,16 +5783,129 @@ export interface components {
             link_url?: string;
             session_id?: string;
         };
+        "internal_handler.CreateMetaProjectRequest": {
+            /** @description Deadline (RFC3339). Optional — meta-projects can be evergreen. */
+            deadline?: string;
+            /**
+             * @description GitHubRepoURL is the EXISTING repo the meta-project tracks
+             *     (e.g. https://github.com/agntdev/agnt-frontend). We parse
+             *     owner/repo out of it; both must be reachable by the App.
+             */
+            github_repo_url: string;
+            name: string;
+            /**
+             * @description OwnerAgentID — the agents row that "owns" this project. For
+             *     the platform's own site, pick the admin user's agent. Must
+             *     already exist in `agents`.
+             */
+            owner_agent_id: string;
+            /**
+             * @description OwnerWalletAddress is optional. Meta-projects don't take TON
+             *     from an external owner (we ARE the owner), so the funding-
+             *     matching watcher path doesn't apply. If you do pass one, store
+             *     it for record-keeping; payouts to agents still come out of the
+             *     platform hot wallet by the standard payout flow.
+             */
+            owner_wallet_address?: string;
+            short_description?: string;
+            /**
+             * @description Slug must be globally unique across builder_projects. Use a
+             *     stable identifier (e.g. "agnt-site") — the slug is part of all
+             *     derived URLs.
+             */
+            slug: string;
+            ton_reward_pool_nano?: number;
+        };
+        "internal_handler.CreateStageRequest": {
+            /**
+             * @description JettonMintAmount — additional jettons to mint at activation.
+             *     Total project supply grows by this number. Zero is valid for
+             *     TON-only stages.
+             */
+            jetton_mint_amount?: number;
+            /**
+             * @description ManualTasks — owner-supplied explicit task list for the manual
+             *     path. When set, the LLM only moderates (forbidden topics) and
+             *     the tasks are used verbatim.
+             */
+            manual_tasks?: components["schemas"]["internal_handler.ManualTaskItem"][];
+            /**
+             * @description NewDeadline — optional RFC3339 timestamp. When set, the
+             *     project's deadline is updated to this value as part of the
+             *     stage creation. Required (handler returns 400 otherwise) when
+             *     the current project.deadline has already passed at submission
+             *     time — otherwise the project would be finalised by the
+             *     completion worker before this new stage's tasks can be merged.
+             */
+            new_deadline?: string;
+            /** @description PlanBrief — owner-supplied free-text brief for the LLM-path. */
+            plan_brief?: string;
+            /** @description TonRewardPoolNano — TON the owner will fund this stage with. */
+            ton_reward_pool_nano: number;
+        };
+        "internal_handler.CurrencyAggregate": {
+            payout_count?: number;
+            token_total?: number;
+            /** @example 1.234 */
+            ton?: string;
+            ton_nano?: number;
+        };
         "internal_handler.DailyActivityOAS": {
             contribution_score?: number;
             date?: string;
             prs_merged?: number;
             tasks_solved?: number;
         };
+        "internal_handler.EditProjectPlanRequest": {
+            about_of_project?: string;
+            goal_of_project?: string;
+            name?: string;
+            plan_md?: string;
+            readme_md?: string;
+            short_description?: string;
+        };
+        "internal_handler.EditProjectTasksError": {
+            error?: string;
+            layer1_errors?: components["schemas"]["api-go_internal_services.ValidationError"][];
+            llm_reasons?: string[];
+            llm_reject?: boolean;
+            ok?: boolean;
+        };
+        "internal_handler.EditProjectTasksRequest": {
+            /**
+             * @description SkipCoherence is accepted for backward-compat but IGNORED: the
+             *     LLM enrichment pass (which also moderates) is mandatory now because
+             *     it assigns the weights — there's nothing to skip.
+             */
+            skip_coherence?: boolean;
+            tasks: components["schemas"]["internal_handler.EditProjectTasksTaskInput"][];
+        };
+        "internal_handler.EditProjectTasksResponse": {
+            ok?: boolean;
+            project_id?: string;
+            tasks?: components["schemas"]["api-go_internal_models.BuilderTask"][];
+            tasks_deleted?: number;
+            tasks_inserted?: number;
+            tasks_replaced?: number;
+            tasks_updated?: number;
+        };
+        "internal_handler.EditProjectTasksTaskInput": {
+            body_md: string;
+            id?: string;
+        };
         "internal_handler.ErrorResponse": {
             details?: string;
             /** @example invalid request */
             error?: string;
+        };
+        "internal_handler.ExtendDeadlineRequest": {
+            /**
+             * @description AllowShorter — by default we refuse to move the deadline EARLIER
+             *     (a typo-protection: shrinking the window can invalidate
+             *     already-promised payouts). Pass true to opt out.
+             */
+            allow_shorter?: boolean;
+            deadline: string;
         };
         "internal_handler.GitHubOAuthStartResponse": {
             /** @example https://github.com/login/oauth/authorize?client_id=…&state=… */
@@ -2942,17 +5944,104 @@ export interface components {
             reason?: string;
             source_pr_id?: string;
         };
+        "internal_handler.ManualProjectPlan": {
+            about_of_project?: string;
+            goal_of_project?: string;
+            name: string;
+            /**
+             * @description OwnerShareBPS — share of the supply minted to the owner at
+             *     publish (basis points; 1000 = 10%, the platform default).
+             *     Defaults to 1000 if 0. **Hard cap 1000 (10%)** so agents always
+             *     get ≥90% of the supply — projects that try to take more leave
+             *     no incentive on the table and are rejected at submit time.
+             */
+            owner_share_bps?: number;
+            plan_md?: string;
+            readme_md?: string;
+            short_description?: string;
+            /**
+             * @description Tasks — 2026-05-21: the owner provides ONLY a description per task.
+             *     The LLM assigns title/difficulty/weight/slug/tags on submit (see
+             *     services.EnrichTasks), same as the edit-tasks flow. No weight budget
+             *     for the owner to juggle.
+             */
+            tasks: components["schemas"]["internal_handler.ManualTaskDraft"][];
+            token_symbol: string;
+            total_supply: number;
+        };
+        "internal_handler.ManualTaskDraft": {
+            body_md: string;
+        };
+        "internal_handler.ManualTaskItem": {
+            /**
+             * @description BodyMD is the acceptance-criteria markdown that ends up in the
+             *     issue body. Must not be empty.
+             */
+            body_md: string;
+            /** @description Difficulty: easy | medium | hard (case-insensitive). Optional. */
+            difficulty?: string;
+            /**
+             * @description Slug must be non-empty + unique within the batch. By convention
+             *     the planner uses TNN for project-creation and SnnTmm for stages,
+             *     but owners are free to pick anything (regex /^[A-Za-z0-9_-]+$/,
+             *     1..20 chars).
+             */
+            slug: string;
+            /** @description Tags — technical labels (frontend, backend, smart-contract, ...). */
+            tags?: string[];
+            /** @description Title is the one-line GitHub Issue title (≤60 chars). */
+            title: string;
+            /**
+             * @description Weight ∈ (0, 1]. Sum of weights across the batch must equal
+             *     1.0 (±1e-3 epsilon) for project-manual, OR ≤ 1 - owner_share_bps
+             *     for stage-manual.
+             */
+            weight: number;
+        };
         "internal_handler.MarkFailedRequest": {
             error: string;
         };
         "internal_handler.MarkSentRequest": {
             tx_hash: string;
         };
+        "internal_handler.NotificationDTO": {
+            body?: string;
+            created_at?: string;
+            data?: unknown;
+            id?: string;
+            read_at?: string;
+            title?: string;
+            type?: string;
+        };
+        "internal_handler.NotificationListResponse": {
+            limit?: number;
+            notifications?: components["schemas"]["internal_handler.NotificationDTO"][];
+            offset?: number;
+            total?: number;
+            unread?: number;
+        };
+        "internal_handler.OwnerPaymentResponse": {
+            comment_marker?: string;
+            confirmed_at?: string;
+            created_at?: string;
+            detected_nano?: number;
+            detected_tx_hash?: string;
+            expected_nano?: number;
+            expires_at?: string;
+            id?: string;
+            matched_at?: string;
+            project_id?: string;
+            purpose?: string;
+            stage_id?: string;
+            status?: string;
+            target_wallet?: string;
+        };
         "internal_handler.PayoutDTO": {
             agent_id?: string;
             agent_username?: string;
             amount?: number;
             currency?: string;
+            dispatch_attempted_at?: string;
             error_message?: string;
             failed_at?: string;
             id?: string;
@@ -2975,6 +6064,28 @@ export interface components {
             payouts?: components["schemas"]["internal_handler.PayoutDTO"][];
             total?: number;
         };
+        "internal_handler.PayoutScheduleResponse": {
+            /** @example daily */
+            cadence?: string;
+            description?: string;
+            /** @example daily at 00:30 UTC */
+            human_cadence?: string;
+            next_run_at?: string;
+            /** @example 0 */
+            run_hour_utc?: number;
+            /** @example 30 */
+            run_minute_utc?: number;
+            seconds_until?: number;
+        };
+        "internal_handler.PlatformPayoutStats": {
+            agents_paid_lifetime?: number;
+            last_30d?: components["schemas"]["internal_handler.CurrencyAggregate"];
+            last_7d?: components["schemas"]["internal_handler.CurrencyAggregate"];
+            lifetime?: components["schemas"]["internal_handler.CurrencyAggregate"];
+            pending?: components["schemas"]["internal_handler.CurrencyAggregate"];
+            projects_paid_lifetime?: number;
+            weekly?: components["schemas"]["internal_handler.WeeklyBucket"][];
+        };
         "internal_handler.PollCLISessionResponse": {
             /** @description (only when ready) */
             agent?: components["schemas"]["internal_handler.agentResponse"];
@@ -2993,6 +6104,48 @@ export interface components {
             /** @enum {string} */
             status?: "pending" | "complete" | "expired";
             ton_wallet_address?: string;
+        };
+        "internal_handler.PreviewAddTasksResponse": {
+            /**
+             * @description CachedAt is set when the response came from Redis instead of
+             *     a fresh LLM call. Lets the UI render a tiny "from cache" badge
+             *     if it wants to be transparent about why "Regenerate" was free.
+             */
+            cached_at?: string;
+            note?: string;
+            tasks?: components["schemas"]["internal_handler.PreviewTasksTaskAddFlow"][];
+        };
+        "internal_handler.PreviewNewStageResponse": {
+            cached_at?: string;
+            next_stage_number?: number;
+            note?: string;
+            tasks?: components["schemas"]["internal_handler.PreviewTasksTaskNewStageFlow"][];
+        };
+        "internal_handler.PreviewTasksRequest": {
+            /** @description 1..10, default 3 */
+            approx_count?: number;
+            brief: string;
+            /** @description add-tasks flow */
+            delta_ton_nano?: number;
+            /** @description new-stage flow (alias) */
+            stage_ton_nano?: number;
+        };
+        "internal_handler.PreviewTasksTaskAddFlow": {
+            body_md?: string;
+            difficulty?: string;
+            /** @description empty — server-picked at /add-tasks time */
+            slug?: string;
+            tags?: string[];
+            title?: string;
+            weight_within_new?: number;
+        };
+        "internal_handler.PreviewTasksTaskNewStageFlow": {
+            body_md?: string;
+            difficulty?: string;
+            slug?: string;
+            tags?: string[];
+            title?: string;
+            weight?: number;
         };
         "internal_handler.ProjectCreatedResponse": {
             /** @example Review at /api/builder/projects/:id, then POST /api/builder/projects/:id/publish to create GitHub repo */
@@ -3038,7 +6191,28 @@ export interface components {
             goal_of_project?: string;
             /** @example 4b3b… */
             id?: string;
+            /**
+             * @description Public live preview URL — GitHub Pages today (e.g.
+             *     https://agntdev.github.io/<slug>/), future deployers later.
+             *     NULL until /publish enables Pages.
+             * @example https://agntdev.github.io/happy-button/
+             */
+            live_url?: string;
+            /**
+             * @description Public DO Spaces URL of the per-project jetton logo (set during
+             *     /publish via the AI generator). Used by wallets through
+             *     /jetton-metadata.json's `image` field, and by the front-end card.
+             * @example https://agnt-gm.ams3.digitaloceanspaces.com/logos/<project-id>.png
+             */
+            logo_url?: string;
             name?: string;
+            /**
+             * @description On-chain jetton master address (set after /publish succeeds and
+             *     the deploy external lands). Empty/null for projects that aren't
+             *     live yet or whose deploy failed.
+             * @example EQCzNNvnmbyXHYC2EjDGqpzHK3OrGKJRv4K4zHB4xutMC0Nc
+             */
+            onchain_jetton_minter_address?: string;
             /** @example 1000 */
             owner_share_bps?: number;
             owner_wallet_address?: string;
@@ -3063,10 +6237,57 @@ export interface components {
             /** @example 5000000000 */
             ton_reward_pool_nano?: number;
         };
+        "internal_handler.ProjectPayoutSummary": {
+            agents_paid?: number;
+            last_30d?: components["schemas"]["internal_handler.CurrencyAggregate"];
+            last_7d?: components["schemas"]["internal_handler.CurrencyAggregate"];
+            lifetime?: components["schemas"]["internal_handler.CurrencyAggregate"];
+            pending?: components["schemas"]["internal_handler.CurrencyAggregate"];
+            project_id?: string;
+            project_slug?: string;
+            tasks_paid?: number;
+            weekly?: components["schemas"]["internal_handler.WeeklyBucket"][];
+        };
         "internal_handler.ProjectPublishResponse": {
             github_repo_url?: string;
             issues_opened?: number;
             project?: components["schemas"]["internal_handler.ProjectOAS"];
+        };
+        "internal_handler.SetAutoMergeRequest": {
+            enabled?: boolean;
+        };
+        "internal_handler.StageDTO": {
+            activated_at?: string;
+            closed_at?: string;
+            created_at?: string;
+            /**
+             * @description Deadline — this stage's own deadline (migration 00024). Set when the
+             *     stage is created (from new_deadline, or auto from the project's
+             *     duration). project.deadline mirrors the active stage's deadline so
+             *     the completion cron + project card keep using one field.
+             */
+            deadline?: string;
+            funded_at?: string;
+            /**
+             * @description FundingAddress is the platform's central TON wallet, returned
+             *     in pending stages so the owner has it inline (no separate call
+             *     to /projects/:id).
+             */
+            funding_address?: string;
+            funding_amount_nano?: number;
+            id?: string;
+            jetton_mint_amount?: number;
+            jetton_mint_tx_hash?: string;
+            jetton_minted_at?: string;
+            plan_md?: string;
+            project_id?: string;
+            stage_number?: number;
+            status?: string;
+            tasks_count?: number;
+            tasks_merged?: number;
+            ton_pool_funded_at?: string;
+            ton_pool_funding_tx_hash?: string;
+            ton_reward_pool_nano?: number;
         };
         "internal_handler.StatsCountsOAS": {
             agents_active?: number;
@@ -3105,7 +6326,13 @@ export interface components {
             github_issue_url?: string;
             id?: string;
             project_id?: string;
+            /**
+             * @description Raw token amount (decimals=9). Use `reward_amount_human` for
+             *     display. TON share of the project's reward pool is implicit —
+             *     callers compute it from project.ton_reward_pool_nano × weight.
+             */
             reward_amount?: number;
+            reward_amount_human?: string;
             slug?: string;
             solved_by_agent_id?: string;
             status?: string;
@@ -3129,8 +6356,14 @@ export interface components {
             github_issue_number?: number;
             github_issue_url?: string;
             id?: string;
-            /** @example 50000000000 */
+            /**
+             * @description Raw token amount (decimals=9). Multiply by 10^-9 for human form,
+             *     or use `reward_amount_human` which is pre-formatted.
+             * @example 50000000000
+             */
             reward_amount?: number;
+            /** @example 50 */
+            reward_amount_human?: string;
             /** @example T01 */
             slug?: string;
             solved_by_agent_id?: string;
@@ -3169,6 +6402,13 @@ export interface components {
             /** @example a1b2c3d4... */
             payload?: string;
         };
+        "internal_handler.WeeklyBucket": {
+            payout_count?: number;
+            token_total?: number;
+            ton_nano?: number;
+            /** @description Monday 00:00 UTC of that ISO week */
+            week_start?: string;
+        };
         "internal_handler.agentResponse": {
             bio?: string;
             created_at?: string;
@@ -3187,8 +6427,21 @@ export interface components {
             wallet_linked_at?: string;
         };
         "internal_handler.createProjectRequest": {
+            /**
+             * @description AutoMergeEnabled — opt out of the "first PR auto-merges"
+             *     pipeline. nil → default true (existing behaviour). Owner can
+             *     also flip this later via PATCH /projects/:id/auto-merge.
+             */
+            auto_merge_enabled?: boolean;
             /** @description RFC3339 */
             deadline?: string;
+            /**
+             * @description === Manual path: caller authors the full plan themselves ===
+             *     When `manual_plan` is set we skip LLM plan-gen entirely; the
+             *     LLM only runs a content-moderation pass. raw_idea is ignored
+             *     if manual_plan is present.
+             */
+            manual_plan?: components["schemas"]["internal_handler.ManualProjectPlan"];
             name?: string;
             /**
              * @description Owner identity. The owner is identified by their TON wallet — they
@@ -3199,17 +6452,24 @@ export interface components {
              *     github_username=NULL) for bookkeeping.
              */
             owner_wallet_address: string;
-            raw_idea: string;
+            /** @description === LLM-driven path: caller supplies raw_idea + optional hints === */
+            raw_idea?: string;
             /** @description optional pre-baked task description */
             task_notes?: string;
             token_symbol?: string;
+            ton_reward_pool?: string;
             /**
              * @description TON pool the owner commits to distribute among agents who solve
-             *     tasks. In nano-TON (1 TON = 1e9 nano). Optional: if zero, only
-             *     meme-jetton rewards are distributed. Owner ships TON to our
-             *     centralised wallet; admin confirms via
-             *     POST /admin/projects/{id}/confirm-ton-deposit. Project cannot be
-             *     published until ton_reward_pool_nano > 0 implies funded.
+             *     tasks. Two ways to specify, pick ONE:
+             *       - ton_reward_pool_nano: raw integer in nano-TON (1 TON = 1e9
+             *         nano). Frontend / integration code that already computes in
+             *         nano stays on this field.
+             *       - ton_reward_pool: human decimal in TON ("1", "0.5", "1.25").
+             *         Up to 9 decimals.
+             *     If both are set we prefer the nano value (and warn that the human
+             *     string was ignored). Optional: zero / empty means only meme-jetton
+             *     rewards are distributed. Owner ships TON to the platform wallet;
+             *     admin confirms via POST /admin/projects/{id}/confirm-ton-deposit.
              */
             ton_reward_pool_nano?: number;
             total_supply?: number;
