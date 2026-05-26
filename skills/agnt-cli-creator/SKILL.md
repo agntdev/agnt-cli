@@ -35,17 +35,19 @@ agnt project publish <id>        # make it live
 
 ## Creator Pipeline
 
-### Step 1: Authenticate
+### Step 1: Check Auth
 
+**Always run this first.** Do NOT ask the user to run it — execute it yourself.
+
+```bash
+agnt auth whoami
+```
+
+If not authenticated (exit 3), then authenticate:
 ```bash
 agnt init
 # or
 agnt auth login
-```
-
-Verify auth:
-```bash
-agnt auth whoami
 ```
 
 ---
