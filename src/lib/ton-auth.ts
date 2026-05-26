@@ -1,7 +1,14 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import QRCode from "qrcode";
 import type { IStorage } from "@tonconnect/sdk";
+import { Entry } from "@napi-rs/keyring";
 
 export interface ProofPayload {
   address: string;
@@ -35,6 +42,8 @@ const TONCONNECT_FILE = join(
   "tonconnect.json",
 );
 
+const KEYRING_SERVICE = "agnt-cli";
+
 function readTonConnectStorage(): Record<string, string> {
   try {
     return JSON.parse(readFileSync(TONCONNECT_FILE, "utf8"));
@@ -46,6 +55,61 @@ function readTonConnectStorage(): Record<string, string> {
 function writeTonConnectStorage(data: Record<string, string>): void {
   mkdirSync(join(process.env.HOME || "", ".agnt"), { recursive: true });
   writeFileSync(TONCONNECT_FILE, JSON.stringify(data));
+}
+
+function migrateFileToKeyring(namespace: string): void {
+  if (!existsSync(TONCONNECT_FILE)) return;
+
+  try {
+    const fileData = readFileSync(TONCONNECT_FILE, "utf8");
+    const parsed = JSON.parse(fileData);
+    if (Object.keys(parsed).length === 0) return;
+
+    // Only migrate if keyring entry is empty (don't overwrite newer data)
+    const entry = new Entry(KEYRING_SERVICE, namespace);
+    const existing = entry.getPassword();
+    if (!existing) {
+      entry.setPassword(fileData);
+      unlinkSync(TONCONNECT_FILE);
+    }
+  } catch {
+    // Migration failed silently — old file stays, keychain will be used going forward
+  }
+}
+
+export class KeyringStorage implements IStorage {
+  private entry: Entry;
+
+  constructor(namespace: string) {
+    this.entry = new Entry(KEYRING_SERVICE, namespace);
+    migrateFileToKeyring(namespace);
+  }
+
+  async setItem(key: string, value: string): Promise<void> {
+    const session = this.readSession();
+    session[key] = value;
+    this.entry.setPassword(JSON.stringify(session));
+  }
+
+  async getItem(key: string): Promise<string | null> {
+    const session = this.readSession();
+    return session[key] ?? null;
+  }
+
+  async removeItem(key: string): Promise<void> {
+    const session = this.readSession();
+    delete session[key];
+    this.entry.setPassword(JSON.stringify(session));
+  }
+
+  private readSession(): Record<string, string> {
+    try {
+      const raw = this.entry.getPassword();
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
 }
 
 export class FileStorage implements IStorage {

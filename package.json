@@ -13,6 +13,7 @@
     "url": "https://github.com/agntdev/agnt-cli/issues"
   },
   "dependencies": {
+    "@napi-rs/keyring": "^1.3.0",
     "@oclif/core": "^4",
     "@oclif/plugin-help": "^6",
     "@tonconnect/sdk": "^3.4.1",

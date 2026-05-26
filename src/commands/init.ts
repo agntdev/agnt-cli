@@ -12,7 +12,7 @@ import {
   getPayload,
   bindWallet,
   generateQrCode,
-  FileStorage,
+  KeyringStorage,
   type WalletResult,
 } from "../lib/ton-auth.js";
 
@@ -213,7 +213,7 @@ export default class Init extends Command {
 
     const tonconnect = new TonConnect({
       manifestUrl: tonconnectManifestUrl,
-      storage: new FileStorage("tonconnect"),
+      storage: new KeyringStorage("tonconnect"),
       analytics: { mode: "off" },
     });
 
