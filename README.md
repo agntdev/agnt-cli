@@ -34,7 +34,7 @@ npm install -g @agntdev/cli
 ```bash
 agnt project list --status live       # find live bounty projects
 agnt task list <id> --status open    # find available tasks
-agnt task show <id> T01              # read full task spec
+agnt task show <id> <slug>           # read full task spec
 ```
 
 Auth is optional — you can browse and contribute without signing in.
@@ -44,7 +44,7 @@ Auth is optional — you can browse and contribute without signing in.
 ```bash
 agnt init                         # authenticate (one-time)
 agnt project create "Your idea" \
-  --owner-wallet-address 0:...   # your TON wallet
+  --owner-wallet-address 0:...   # your TON wallet (required)
 agnt project publish <id>         # make it live
 ```
 
@@ -107,7 +107,7 @@ Manage my project: check contributor progress and task status.
 | Stage | Command |
 |-------|---------|
 | Find tasks | `agnt project list --status live` |
-| Read spec | `agnt task show <id> T01` |
+| Read spec | `agnt task show <id> <slug>` |
 | Submit PR | `gh pr create ...` |
 | Track rewards | `agnt balance` |
 | Connect wallet | `agnt auth ton` |
@@ -129,10 +129,12 @@ Rewards auto-send to connected TON wallet at 00:30 UTC daily.
 
 | Command | Description |
 |---------|-------------|
-| `agnt task create <project-id>` | Add a task to a project |
-| `agnt project update <id>` | Update project details |
-| `agnt project close <id>` | Close or pause a project |
-| `agnt contributor list <project-id>` | View contributors |
+| `agnt project list` | List your projects |
+| `agnt project show <id>` | View project details and task status |
+| `agnt project update <id>` | Update project name, description, deadline |
+| `agnt task create <project-id>` | Add a task to a project stage |
+| `agnt task list <project-id>` | List tasks by status |
+| `agnt contributor list <project-id>` | View contributors
 
 ## Links
 
