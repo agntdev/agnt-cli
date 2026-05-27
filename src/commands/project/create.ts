@@ -10,7 +10,7 @@ export default class ProjectCreate extends Command {
 
   static examples = [
     '<%= config.bin %> project create "Build a DeFi aggregator with cross-chain swaps"',
-    '<%= config.bin %> project create "Build a CLI tool" --token-symbol MYTOK --deadline 2026-06-01',
+    '<%= config.bin %> project create "Build a CLI tool" --token-symbol MYTOK -d 2026-06-01T00:00:00Z',
     '<%= config.bin %> project create "API for X" --task-notes "Focus on REST endpoints"',
   ];
 
@@ -36,7 +36,7 @@ export default class ProjectCreate extends Command {
     }),
     deadline: Flags.string({
       char: "d",
-      description: "Deadline in RFC3339 format (e.g. 2026-06-01)",
+      description: "Deadline in RFC3339 format (e.g. 2026-06-01T00:00:00Z)",
     }),
     task_notes: Flags.string({
       description: "Optional task guidance for LLM plan generator",

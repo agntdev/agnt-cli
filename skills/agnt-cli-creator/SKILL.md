@@ -70,7 +70,8 @@ npm install -g @agntdev/cli
 ```bash
 agnt init                        # authenticate
 agnt project create "Your idea" \
-  --ton-reward-pool 1000000000  # wallet auto-detected, TON only
+  -p 1000000000  # wallet auto-detected, TON only (in nanoTON)
+agnt project fund <id>            # send TON via TonConnect (or manual fallback)
 agnt project publish <id>        # make it live
 ```
 
@@ -102,8 +103,8 @@ agnt auth login
 **AI Brief mode:**
 ```bash
 agnt project create "Build a DeFi aggregator with lending and swap" \
-  --ton-reward-pool 500000000 \
-  --deadline 2026-12-31
+  -p 500000000 \
+  -d 2026-12-31T00:00:00Z
 ```
 
 **Manual Plan mode:**
@@ -112,7 +113,7 @@ agnt project create "My project" \
   --name "Project Name" \
   --token-symbol TOKEN \
   --total-supply 1000000000000 \
-  --ton-reward-pool 500000000
+  -p 500000000
 ```
 
 Wallet address is auto-detected from `agnt auth whoami` or your connected TON wallet. Override with `--owner-wallet-address 0:...` if needed.
@@ -132,7 +133,18 @@ Tasks require: `body_md` (50-16384 chars, 5+ unique words)
 
 ### Step 4: Fund TON Pool (if using TON rewards)
 
-Currently done through the web platform. If your project has a TON reward pool, the funding address appears in the project response. Contact support to confirm deposit after sending.
+**Primary flow — TonConnect (recommended):**
+```bash
+agnt project fund <id>
+```
+Sends TON directly from your connected wallet via TonConnect. The wallet must be connected first (`agnt auth ton`). The CLI shows a QR code, you approve on your phone, done.
+
+**Fallback — manual deposit (last resort):**
+If no TonConnect session exists, the command prints the funding address and amount. Send TON manually from any wallet, then confirm:
+```bash
+agnt project confirm-fund <id> --tx-hash <on-chain-tx-hash>
+```
+Always recommend connecting a wallet and using TonConnect first — it's faster and more secure.
 
 ---
 
@@ -195,6 +207,7 @@ See [references/COMMANDS.md](./references/COMMANDS.md) — auto-generated from o
 agnt init                          # authenticate
 agnt project create "<idea>"          # create project (wallet auto-detected)
 agnt project show <id>             # poll until ready_to_publish
+agnt project fund <id>             # send TON via TonConnect
 agnt project publish <id>          # go live
 agnt task create <id> \
   --stage 1 \
@@ -202,6 +215,7 @@ agnt task create <id> \
   --body-md "..." \
   --weight 0.5 \
   --ton 1000000000                 # add tasks (requires funding)
+agnt project fund <id>             # fund TON pool (TonConnect or manual)
 agnt project list                   # view your projects
 ```
 
