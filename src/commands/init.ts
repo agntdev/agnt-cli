@@ -7,7 +7,12 @@ import {
   toUserFriendlyAddress,
 } from "@tonconnect/sdk";
 
-import { isLoggedIn, getToken, saveCredentials } from "../lib/auth.js";
+import {
+  isLoggedIn,
+  getToken,
+  saveCredentials,
+  clearCredentials,
+} from "../lib/auth.js";
 import {
   getPayload,
   bindWallet,
@@ -69,8 +74,19 @@ export default class Init extends Command {
     this.log("");
 
     if (isLoggedIn()) {
-      this.log(`  ${chalk.green("✓")} Already authenticated`);
-      this.log("");
+      const token = getToken();
+      const valid = token ? await this.validateToken(token) : false;
+      if (valid) {
+        this.log(`  ${chalk.green("✓")} Already authenticated`);
+        this.log("");
+      } else {
+        this.log(
+          `  ${chalk.yellow("!")} Stored credentials are invalid, re-authenticating...`,
+        );
+        this.log("");
+        clearCredentials();
+        await this.authenticate();
+      }
     } else {
       await this.authenticate();
     }
@@ -352,6 +368,17 @@ export default class Init extends Command {
       this.log("");
     } catch (error) {
       this.error(`Failed to bind wallet: ${error}`, { exit: 1 });
+    }
+  }
+
+  private async validateToken(token: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE}/builder/agents/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.ok;
+    } catch {
+      return false;
     }
   }
 

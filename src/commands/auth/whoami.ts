@@ -35,6 +35,18 @@ export default class AuthWhoami extends Command {
         typeof error === "object" && error !== null && "error" in error
           ? error.error
           : String(error);
+
+      // Give actionable advice for invalid/expired credentials
+      if (
+        typeof msg === "string" &&
+        /invalid.*(api.?key|token|credentials)/i.test(msg)
+      ) {
+        this.error(
+          `Stored credentials are no longer valid. Run "agnt init" to re-authenticate.\n  (API: ${msg})`,
+          { exit: 3 },
+        );
+      }
+
       this.error(`API error: ${msg ?? "Unknown"}`, { exit: 1 });
     }
 
