@@ -148,12 +148,8 @@ export default class Init extends Command {
       this.error(`Failed to create auth session: ${error}`, { exit: 1 });
     }
 
-    const authUrl = session.login_url;
-    this.log(
-      `  Verification code: ${chalk.bold.white(session.verification_code)}`,
-    );
-    this.log("  Enter this code on the login page when prompted.");
-    this.log("");
+    // SPA /cli-login page not yet deployed — pass verifier directly
+    const authUrl = `${API_BASE}/auth/github?cli_session=${session.session_id}&cli_verifier=${encodeURIComponent(session.verification_code)}&redirect=1`;
     await openBrowser(authUrl);
 
     this.log(`  ${chalk.yellow("→")} Open browser to: ${authUrl}`);

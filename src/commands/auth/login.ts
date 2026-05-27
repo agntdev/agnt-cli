@@ -95,11 +95,8 @@ export default class AuthLogin extends Command {
     this.log(`  Expires in: ${session.expires_in}s`);
     this.log("");
 
-    // 2. Open the SPA's /cli-login page with the session embedded.
-    //    The user enters the verification code there, then proceeds
-    //    through GitHub OAuth. The callback stores tokens in Redis
-    //    under this session_id, and we pick them up via polling below.
-    const authUrl = session.login_url;
+    // SPA /cli-login page not yet deployed — pass verifier directly
+    const authUrl = `${API_BASE}/auth/github?cli_session=${session.session_id}&cli_verifier=${encodeURIComponent(session.verification_code)}&redirect=1`;
     this.log("  Opening login page…");
     if (flags["auto-open"]) {
       await openBrowser(authUrl);
