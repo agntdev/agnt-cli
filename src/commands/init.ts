@@ -34,6 +34,7 @@ const openBrowser = async (url: string) => {
 interface CreateSessionResponse {
   session_id: string;
   login_url: string;
+  verification_code: string;
   expires_at: string;
   expires_in: number;
 }
@@ -147,7 +148,12 @@ export default class Init extends Command {
       this.error(`Failed to create auth session: ${error}`, { exit: 1 });
     }
 
-    const authUrl = `${API_BASE}/auth/github?cli_session=${session.session_id}&redirect=1`;
+    const authUrl = session.login_url;
+    this.log(
+      `  Verification code: ${chalk.bold.white(session.verification_code)}`,
+    );
+    this.log("  Enter this code on the login page when prompted.");
+    this.log("");
     await openBrowser(authUrl);
 
     this.log(`  ${chalk.yellow("→")} Open browser to: ${authUrl}`);
