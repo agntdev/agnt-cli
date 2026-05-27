@@ -1,48 +1,98 @@
-import {runCommand} from '@oclif/test'
-import {describe, it, expect} from 'vitest'
+import { runCommand } from "@oclif/test";
+import { describe, it, expect, beforeEach } from "vitest";
+import nock from "nock";
 
-describe('auth', () => {
-  describe('logout', () => {
-    it('exits with non-zero when not logged in', async () => {
-      const {error} = await runCommand(['auth', 'logout'])
-      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1)
-    })
-  })
+const API = "https://api.agnt-gm.ai";
 
-  describe('whoami', () => {
-    it('exits with non-zero when not logged in', async () => {
-      const {error} = await runCommand(['auth', 'whoami'])
-      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1)
-    })
-  })
+describe("auth", () => {
+  beforeEach(() => {
+    nock.cleanAll();
+  });
 
-  describe('api-keys', () => {
-    it('exits with non-zero when not logged in', async () => {
-      const {error} = await runCommand(['auth', 'api-keys'])
-      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1)
-    })
+  describe("logout", () => {
+    it("exits with non-zero when not logged in", async () => {
+      const { error } = await runCommand(["auth", "logout"]);
+      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1);
+    });
+  });
 
-    it('exits with non-zero for --create when not logged in', async () => {
-      const {error} = await runCommand(['auth', 'api-keys', '--create', '--force'])
-      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1)
-    })
+  describe("whoami", () => {
+    it("returns agent profile", async () => {
+      nock(API)
+        .get("/api/builder/agents/me")
+        .matchHeader("authorization", /^Bearer amk_/)
+        .reply(200, {
+          agent: {
+            id: "agent-1",
+            github_username: "testdev",
+            display_name: "Test Dev",
+            ton_wallet_address: "EQ...",
+            reputation_score: 42,
+            prs_merged: 5,
+            prs_rejected: 1,
+            created_at: "2025-06-01T00:00:00Z",
+          },
+        });
 
-    it('exits with non-zero for --revoke when not logged in', async () => {
-      const {error} = await runCommand(['auth', 'api-keys', '--revoke', 'key-1', '--force'])
-      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1)
-    })
+      const { stdout, error } = await runCommand(["auth", "whoami", "--json"]);
+      expect(error).toBeUndefined();
 
-    it('exits with code 2 for invalid --revoke without key-id', async () => {
-      const {error} = await runCommand(['auth', 'api-keys', '--revoke'])
-      expect(error?.oclif?.exit).to.eq(2)
-    })
-  })
+      const out = JSON.parse(stdout);
+      expect(out.agent.id).toBe("agent-1");
+      expect(out.agent.github_username).toBe("testdev");
+      expect(out.agent.wallet_connected).toBe(true);
+    });
 
-  describe('login', () => {
-    it('exits with code 2 when no --token and non-TTY', async () => {
-      const {error} = await runCommand(['auth', 'login'])
-      // Non-TTY without --token should fail
-      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1)
-    })
-  })
-})
+    it("exits with non-zero when not logged in", async () => {
+      const { error } = await runCommand(["auth", "whoami"]);
+      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1);
+    });
+
+    it("exits 1 on API error", async () => {
+      nock(API).get("/api/builder/agents/me").reply(500, { error: "boom" });
+
+      const { error } = await runCommand(["auth", "whoami"]);
+      expect(error?.oclif?.exit).toBe(1);
+    });
+  });
+
+  describe("api-keys", () => {
+    it("exits with non-zero when not logged in", async () => {
+      const { error } = await runCommand(["auth", "api-keys"]);
+      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1);
+    });
+
+    it("exits with non-zero for --create when not logged in", async () => {
+      const { error } = await runCommand([
+        "auth",
+        "api-keys",
+        "--create",
+        "--force",
+      ]);
+      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1);
+    });
+
+    it("exits with non-zero for --revoke when not logged in", async () => {
+      const { error } = await runCommand([
+        "auth",
+        "api-keys",
+        "--revoke",
+        "key-1",
+        "--force",
+      ]);
+      expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1);
+    });
+
+    it("exits 2 when --revoke without key-id", async () => {
+      const { error } = await runCommand(["auth", "api-keys", "--revoke"]);
+      expect(error?.oclif?.exit).toBe(2);
+    });
+  });
+
+  describe("login", () => {
+    it("exits 2 in non-TTY without --token", async () => {
+      const { error } = await runCommand(["auth", "login"]);
+      expect(error?.oclif?.exit).toBe(2);
+    });
+  });
+});

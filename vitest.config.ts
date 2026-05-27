@@ -1,11 +1,11 @@
-import {defineConfig} from 'vitest/config'
+import { defineConfig } from "vitest/config";
 
-process.env.AGNT_CREDENTIALS_DIR = '/tmp/agnt-test-creds'
+process.env.AGNT_CREDENTIALS_DIR = "/tmp/agnt-test-creds";
 
 export default defineConfig({
   test: {
-    include: ['test/**/*.test.ts'],
+    include: ["test/**/*.test.ts"],
     globals: true,
-    environment: 'node',
+    environment: "node",
   },
-})
+});
