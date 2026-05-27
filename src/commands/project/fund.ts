@@ -187,7 +187,16 @@ export default class ProjectFund extends Command {
       boc = result.boc;
     } catch (err) {
       if (err instanceof UserRejectsError) {
-        this.error("Transaction rejected on wallet.", { exit: 1 });
+        this.log("");
+        this.log(chalk.yellow("Transaction rejected on wallet."));
+        this.log(chalk.dim("Use manual deposit instead:"));
+        await this.showManualInstructions(
+          project.id!,
+          fundingAddress,
+          fundingAmount ?? project.ton_reward_pool_nano,
+          flags,
+        );
+        return;
       }
       this.error(`Transaction failed: ${err}`, { exit: 1 });
     }
