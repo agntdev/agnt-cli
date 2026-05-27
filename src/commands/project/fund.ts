@@ -113,6 +113,9 @@ export default class ProjectFund extends Command {
     }
 
     // ── TonConnect flow ──
+    const origDebug = console.debug;
+    console.debug = () => {};
+
     const tonconnect = new TonConnect({
       manifestUrl: tonconnectManifestUrl,
       storage: new KeyringStorage("tonconnect"),
@@ -126,6 +129,7 @@ export default class ProjectFund extends Command {
     }
 
     if (!tonconnect.connected || !tonconnect.account) {
+      console.debug = origDebug;
       this.log("");
       this.log(
         chalk.yellow(
@@ -187,6 +191,7 @@ export default class ProjectFund extends Command {
       boc = result.boc;
     } catch (err) {
       if (err instanceof UserRejectsError) {
+        console.debug = origDebug;
         this.log("");
         this.log(chalk.yellow("Transaction rejected on wallet."));
         this.log(chalk.dim("Use manual deposit instead:"));
@@ -260,7 +265,9 @@ export default class ProjectFund extends Command {
       message_hash: cellHash ?? null,
     };
 
+    console.debug = origDebug;
     outputJSONAuto(result, flags.json, flags.quiet);
+    this.exit(0);
   }
 
   private async showManualInstructions(
