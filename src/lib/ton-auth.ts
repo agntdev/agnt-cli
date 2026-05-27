@@ -1,14 +1,8 @@
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import QRCode from "qrcode";
 import type { IStorage } from "@tonconnect/sdk";
-import { Entry } from "@napi-rs/keyring";
+import { keyringRead, keyringWrite, migrateFileToKeyring } from "./keyring.js";
 
 export interface ProofPayload {
   address: string;
@@ -36,75 +30,92 @@ export interface WalletResult {
   };
 }
 
-const TONCONNECT_FILE = join(
-  process.env.HOME || "",
-  ".agnt",
-  "tonconnect.json",
-);
+const TONCONNECT_DIR = join(process.env.HOME || "", ".agnt");
+const TONCONNECT_FILE = join(TONCONNECT_DIR, "tonconnect.json");
+const KEYRING_ACCOUNT = "tonconnect";
 
-const KEYRING_SERVICE = "agnt-cli";
+// ---- File-based fallback for when keyring is unavailable ----
 
-function readTonConnectStorage(): Record<string, string> {
+function readFileSession(): Record<string, string> {
   try {
+    if (!existsSync(TONCONNECT_FILE)) return {};
     return JSON.parse(readFileSync(TONCONNECT_FILE, "utf8"));
   } catch {
     return {};
   }
 }
 
-function writeTonConnectStorage(data: Record<string, string>): void {
-  mkdirSync(join(process.env.HOME || "", ".agnt"), { recursive: true });
-  writeFileSync(TONCONNECT_FILE, JSON.stringify(data));
-}
-
-function migrateFileToKeyring(namespace: string): void {
-  if (!existsSync(TONCONNECT_FILE)) return;
-
+function writeFileSession(data: Record<string, string>): void {
   try {
-    const fileData = readFileSync(TONCONNECT_FILE, "utf8");
-    const parsed = JSON.parse(fileData);
-    if (Object.keys(parsed).length === 0) return;
-
-    // Only migrate if keyring entry is empty (don't overwrite newer data)
-    const entry = new Entry(KEYRING_SERVICE, namespace);
-    const existing = entry.getPassword();
-    if (!existing) {
-      entry.setPassword(fileData);
-      unlinkSync(TONCONNECT_FILE);
-    }
+    mkdirSync(TONCONNECT_DIR, { recursive: true });
+    writeFileSync(TONCONNECT_FILE, JSON.stringify(data));
   } catch {
-    // Migration failed silently — old file stays, keychain will be used going forward
+    // File write failed — caller already attempted keyring
   }
 }
 
+// ---- Keyring-backed IStorage ----
+
 export class KeyringStorage implements IStorage {
-  private entry: Entry;
+  private useKeyring: boolean;
 
   constructor(namespace: string) {
-    this.entry = new Entry(KEYRING_SERVICE, namespace);
-    migrateFileToKeyring(namespace);
+    // namespace is ignored — we always use the shared tonconnect account.
+    // Kept for API compatibility with TonConnect SDK.
+    void namespace;
+
+    // Attempt migration on first construction
+    migrateFileToKeyring(TONCONNECT_FILE, KEYRING_ACCOUNT);
+
+    // Probe keyring once to decide which backend to use
+    this.useKeyring = this.probeKeyring();
   }
 
   async setItem(key: string, value: string): Promise<void> {
-    const session = this.readSession();
+    if (this.useKeyring) {
+      const session = this.readKeyringSession();
+      session[key] = value;
+      if (keyringWrite(KEYRING_ACCOUNT, JSON.stringify(session))) return;
+      // Keyring write failed — fall back to file for future ops
+      this.useKeyring = false;
+    }
+    const session = readFileSession();
     session[key] = value;
-    this.entry.setPassword(JSON.stringify(session));
+    writeFileSession(session);
   }
 
   async getItem(key: string): Promise<string | null> {
-    const session = this.readSession();
+    if (this.useKeyring) {
+      const session = this.readKeyringSession();
+      if (session && key in session) return session[key];
+      // Keyring read returned nothing useful — try file
+    }
+    const session = readFileSession();
     return session[key] ?? null;
   }
 
   async removeItem(key: string): Promise<void> {
-    const session = this.readSession();
+    if (this.useKeyring) {
+      const session = this.readKeyringSession();
+      delete session[key];
+      if (keyringWrite(KEYRING_ACCOUNT, JSON.stringify(session))) return;
+      this.useKeyring = false;
+    }
+    const session = readFileSession();
     delete session[key];
-    this.entry.setPassword(JSON.stringify(session));
+    writeFileSession(session);
   }
 
-  private readSession(): Record<string, string> {
+  // ---- private helpers ----
+
+  private probeKeyring(): boolean {
+    // Write a sentinel to test if keyring is functional
+    return keyringWrite(KEYRING_ACCOUNT + "-probe", "1");
+  }
+
+  private readKeyringSession(): Record<string, string> {
     try {
-      const raw = this.entry.getPassword();
+      const raw = keyringRead(KEYRING_ACCOUNT);
       return raw ? JSON.parse(raw) : {};
     } catch {
       return {};
@@ -112,26 +123,7 @@ export class KeyringStorage implements IStorage {
   }
 }
 
-export class FileStorage implements IStorage {
-  constructor(private key: string) {}
-
-  async setItem(key: string, value: string): Promise<void> {
-    const session = readTonConnectStorage();
-    session[key] = value;
-    writeTonConnectStorage(session);
-  }
-
-  async getItem(key: string): Promise<string | null> {
-    const session = readTonConnectStorage();
-    return session[key] ?? null;
-  }
-
-  async removeItem(key: string): Promise<void> {
-    const session = readTonConnectStorage();
-    delete session[key];
-    writeTonConnectStorage(session);
-  }
-}
+// ---- API helpers ----
 
 export async function getPayload(
   apiBase: string,
