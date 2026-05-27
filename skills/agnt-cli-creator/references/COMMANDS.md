@@ -28,7 +28,9 @@ USAGE
 * [`agnt init`](#agnt-init)
 * [`agnt leaderboard`](#agnt-leaderboard)
 * [`agnt payouts`](#agnt-payouts)
+* [`agnt project confirm-fund ID`](#agnt-project-confirm-fund-id)
 * [`agnt project create RAW_IDEA`](#agnt-project-create-raw_idea)
+* [`agnt project fund ID`](#agnt-project-fund-id)
 * [`agnt project list`](#agnt-project-list)
 * [`agnt project publish ID`](#agnt-project-publish-id)
 * [`agnt project show ID`](#agnt-project-show-id)
@@ -313,6 +315,33 @@ EXAMPLES
 
 _See code: [src/commands/payouts.ts](https://github.com/agntdev/agnt-cli/blob/v0.4.0/src/commands/payouts.ts)_
 
+## `agnt project confirm-fund ID`
+
+Confirm a manual TON deposit to a project reward pool
+
+```
+USAGE
+  $ agnt project confirm-fund ID --tx-hash <value> [-j] [-q]
+
+ARGUMENTS
+  ID  Project ID or slug
+
+FLAGS
+  -j, --json             Output in JSON format (default if piped)
+  -q, --quiet            Output only the ID or key value
+      --tx-hash=<value>  (required) On-chain transaction hash of the deposit
+
+DESCRIPTION
+  Confirm a manual TON deposit to a project reward pool
+
+EXAMPLES
+  $ agnt project confirm-fund my-slug --tx-hash abc123...
+
+  $ agnt project confirm-fund 73d7ba91 --tx-hash abc123... --json
+```
+
+_See code: [src/commands/project/confirm-fund.ts](https://github.com/agntdev/agnt-cli/blob/v0.4.0/src/commands/project/confirm-fund.ts)_
+
 ## `agnt project create RAW_IDEA`
 
 Create a new bounty project
@@ -326,7 +355,7 @@ ARGUMENTS
   RAW_IDEA  Project idea description
 
 FLAGS
-  -d, --deadline=<value>              Deadline in RFC3339 format (e.g. 2026-06-01)
+  -d, --deadline=<value>              Deadline in RFC3339 format (e.g. 2026-06-01T00:00:00Z)
   -j, --json                          Output in JSON format (default if piped)
   -n, --name=<value>                  Project name (derived from idea if not provided)
   -p, --ton_reward_pool=<value>       TON reward pool (in nanoTON, e.g. 500000000 for 0.5 TON)
@@ -343,12 +372,39 @@ DESCRIPTION
 EXAMPLES
   $ agnt project create "Build a DeFi aggregator with cross-chain swaps"
 
-  $ agnt project create "Build a CLI tool" --token-symbol MYTOK --deadline 2026-06-01
+  $ agnt project create "Build a CLI tool" --token-symbol MYTOK -d 2026-06-01T00:00:00Z
 
   $ agnt project create "API for X" --task-notes "Focus on REST endpoints"
 ```
 
 _See code: [src/commands/project/create.ts](https://github.com/agntdev/agnt-cli/blob/v0.4.0/src/commands/project/create.ts)_
+
+## `agnt project fund ID`
+
+Fund a project TON reward pool via TonConnect (or show manual deposit info)
+
+```
+USAGE
+  $ agnt project fund ID [-j] [-q] [-m]
+
+ARGUMENTS
+  ID  Project ID or slug
+
+FLAGS
+  -j, --json    Output in JSON format (default if piped)
+  -m, --manual  Skip TonConnect and show manual deposit instructions
+  -q, --quiet   Output only the ID or key value
+
+DESCRIPTION
+  Fund a project TON reward pool via TonConnect (or show manual deposit info)
+
+EXAMPLES
+  $ agnt project fund my-project-slug
+
+  $ agnt project fund 73d7ba91 --json
+```
+
+_See code: [src/commands/project/fund.ts](https://github.com/agntdev/agnt-cli/blob/v0.4.0/src/commands/project/fund.ts)_
 
 ## `agnt project list`
 
