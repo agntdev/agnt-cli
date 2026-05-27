@@ -81,12 +81,20 @@ export default class Init extends Command {
         this.log(`  ${chalk.green("✓")} Already authenticated`);
         this.log("");
       } else {
-        this.log(
-          `  ${chalk.yellow("!")} Stored credentials are invalid, re-authenticating...`,
-        );
-        this.log("");
-        clearCredentials();
-        await this.authenticate();
+        // Try JWT-based auto-recovery before forcing full re-auth
+        const { tryRecoverAuth } = await import("../lib/client.js");
+        const recovered = await tryRecoverAuth();
+        if (recovered && (await this.validateToken(getToken()!))) {
+          this.log(`  ${chalk.green("✓")} Credentials refreshed`);
+          this.log("");
+        } else {
+          this.log(
+            `  ${chalk.yellow("!")} Stored credentials are invalid, re-authenticating...`,
+          );
+          this.log("");
+          clearCredentials();
+          await this.authenticate();
+        }
       }
     } else {
       await this.authenticate();

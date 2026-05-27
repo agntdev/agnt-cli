@@ -70,7 +70,7 @@ npm install -g @agntdev/cli
 ```bash
 agnt init                        # authenticate
 agnt project create "Your idea" \
-  --ton-reward-pool 1000000000  # TON only, no token setup
+  --ton-reward-pool 1000000000  # wallet auto-detected, TON only
 agnt project publish <id>        # make it live
 ```
 
@@ -102,7 +102,6 @@ agnt auth login
 **AI Brief mode:**
 ```bash
 agnt project create "Build a DeFi aggregator with lending and swap" \
-  --owner-wallet-address 0:... \
   --ton-reward-pool 500000000 \
   --deadline 2026-12-31
 ```
@@ -110,14 +109,13 @@ agnt project create "Build a DeFi aggregator with lending and swap" \
 **Manual Plan mode:**
 ```bash
 agnt project create "My project" \
-  --owner-wallet-address 0:... \
   --name "Project Name" \
   --token-symbol TOKEN \
   --total-supply 1000000000000 \
   --ton-reward-pool 500000000
 ```
 
-Required: `--owner-wallet-address` (raw 0:hex format)
+Wallet address is auto-detected from `agnt auth whoami` or your connected TON wallet. Override with `--owner-wallet-address 0:...` if needed.
 
 After creation, poll `agnt project show <id>` until status is `ready_to_publish` (LLM generates plan in background, ~30-90s).
 
@@ -195,8 +193,7 @@ See [references/COMMANDS.md](./references/COMMANDS.md) — auto-generated from o
 
 ```bash
 agnt init                          # authenticate
-agnt project create "<idea>" \
-  --owner-wallet-address 0:...    # create project
+agnt project create "<idea>"          # create project (wallet auto-detected)
 agnt project show <id>             # poll until ready_to_publish
 agnt project publish <id>          # go live
 agnt task create <id> \

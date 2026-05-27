@@ -188,6 +188,73 @@ export async function bindWallet(
   return json;
 }
 
+/** Read TON wallet address from tonconnect storage (keyring or file).
+ *  Returns raw 0:hex address, or null if no wallet connected. */
+export function getTonWalletAddress(): string | null {
+  // Try keyring first
+  const keyringRaw = keyringRead(KEYRING_ACCOUNT);
+  if (keyringRaw) {
+    const addr = extractAddress(keyringRaw);
+    if (addr) return addr;
+  }
+
+  // Fall back to file
+  const fileRaw = readFileSessionRaw();
+  if (fileRaw) {
+    const addr = extractAddress(fileRaw);
+    if (addr) return addr;
+  }
+
+  return null;
+}
+
+function readFileSessionRaw(): string | null {
+  try {
+    if (!existsSync(TONCONNECT_FILE)) return null;
+    return readFileSync(TONCONNECT_FILE, "utf8");
+  } catch {
+    return null;
+  }
+}
+
+function extractAddress(raw: string): string | null {
+  try {
+    const session = JSON.parse(raw) as Record<string, unknown>;
+    for (const value of Object.values(session)) {
+      if (typeof value !== "string") continue;
+      try {
+        const parsed = JSON.parse(value);
+        // TonConnect SDK 3.x: wallet info at top-level .address
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          "address" in parsed &&
+          typeof parsed.address === "string"
+        ) {
+          return parsed.address;
+        }
+        // Some versions nest under .account.address
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          "account" in parsed &&
+          typeof parsed.account === "object" &&
+          parsed.account !== null &&
+          "address" in parsed.account &&
+          typeof parsed.account.address === "string"
+        ) {
+          return parsed.account.address;
+        }
+      } catch {
+        // Not JSON — skip
+      }
+    }
+  } catch {
+    // Invalid JSON
+  }
+  return null;
+}
+
 export async function generateQrCode(text: string): Promise<string> {
   return QRCode.toString(text, {
     type: "terminal",

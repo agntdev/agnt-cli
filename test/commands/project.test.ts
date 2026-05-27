@@ -92,9 +92,12 @@ describe("project", () => {
       saveCredentials({ token: "amk_test", agent_id: "agent-1" });
     });
 
-    it("creates a project", async () => {
-      nock(API)
-        .post("/api/builder/projects", (body) => body.raw_idea === "BuildX")
+    it("creates a project with explicit wallet", async () => {
+      const scope = nock(API)
+        .post(
+          "/api/builder/projects",
+          (body) => body.owner_wallet_address === "0:abc",
+        )
         .matchHeader("authorization", /^Bearer amk_/)
         .reply(200, {
           project: { id: "proj_new", name: "MyProj", status: "draft" },
@@ -117,6 +120,58 @@ describe("project", () => {
       const out = JSON.parse(stdout);
       expect(out.project.id).toBe("proj_new");
       expect(out.task_count).toBe(3);
+      expect(scope.isDone()).toBe(true);
+    });
+
+    it("auto-resolves wallet from whoami", async () => {
+      nock(API)
+        .get("/api/builder/agents/me")
+        .reply(200, {
+          agent: { id: "agent-1", ton_wallet_address: "0:def456" },
+        });
+
+      const scope = nock(API)
+        .post(
+          "/api/builder/projects",
+          (body) => body.owner_wallet_address === "0:def456",
+        )
+        .reply(200, {
+          project: { id: "proj_auto", name: "Auto", status: "draft" },
+          task_count: 5,
+          next_step: "Review",
+        });
+
+      const { stdout, error } = await runCommand([
+        "project",
+        "create",
+        "AutoIdea",
+        "--name",
+        "Auto",
+        "--json",
+      ]);
+
+      expect(error).toBeUndefined();
+      const out = JSON.parse(stdout);
+      expect(out.project.id).toBe("proj_auto");
+      expect(scope.isDone()).toBe(true);
+    });
+
+    it("errors when no wallet found", async () => {
+      nock(API)
+        .get("/api/builder/agents/me")
+        .reply(200, {
+          agent: { id: "agent-1" },
+        });
+
+      const { error } = await runCommand([
+        "project",
+        "create",
+        "NoWalletIdea",
+        "--name",
+        "NoWallet",
+      ]);
+
+      expect(error?.oclif?.exit).toBe(2);
     });
   });
 });

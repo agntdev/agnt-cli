@@ -25,29 +25,54 @@ export default class AuthWhoami extends Command {
       });
     }
 
-    const { client, authHeaders } = await import("../../lib/client.js");
-    const { data, error } = await client.GET("/builder/agents/me", {
+    const { client, authHeaders, tryRecoverAuth } =
+      await import("../../lib/client.js");
+
+    let { data, error } = await client.GET("/builder/agents/me", {
       headers: authHeaders(),
     });
 
+    // Auto-recovery: if amk_ key is invalid, try using JWT to regenerate it
     if (error) {
       const msg =
         typeof error === "object" && error !== null && "error" in error
           ? error.error
           : String(error);
 
-      // Give actionable advice for invalid/expired credentials
       if (
         typeof msg === "string" &&
         /invalid.*(api.?key|token|credentials)/i.test(msg)
       ) {
-        this.error(
-          `Stored credentials are no longer valid. Run "agnt init" to re-authenticate.\n  (API: ${msg})`,
-          { exit: 3 },
-        );
+        if (await tryRecoverAuth()) {
+          // Retry with freshly regenerated token
+          const retry = await client.GET("/builder/agents/me", {
+            headers: authHeaders(),
+          });
+          if (!retry.error) {
+            data = retry.data;
+            error = undefined;
+          }
+        }
       }
 
-      this.error(`API error: ${msg ?? "Unknown"}`, { exit: 1 });
+      if (error) {
+        const errMsg =
+          typeof error === "object" && error !== null && "error" in error
+            ? error.error
+            : String(error);
+
+        if (
+          typeof errMsg === "string" &&
+          /invalid.*(api.?key|token|credentials)/i.test(errMsg)
+        ) {
+          this.error(
+            `Stored credentials are no longer valid. Run "agnt auth login" to re-authenticate.\n  (API: ${errMsg})`,
+            { exit: 3 },
+          );
+        }
+
+        this.error(`API error: ${errMsg ?? "Unknown"}`, { exit: 1 });
+      }
     }
 
     const agent = data?.agent;

@@ -319,8 +319,8 @@ Create a new bounty project
 
 ```
 USAGE
-  $ agnt project create RAW_IDEA -w <value> [-j] [-q] [-n <value>] [-t <value>] [--total_supply <value>] [-d
-    <value>] [--task_notes <value>] [-p <value>]
+  $ agnt project create RAW_IDEA [-j] [-q] [-n <value>] [-t <value>] [--total_supply <value>] [-d <value>]
+    [--task_notes <value>] [-p <value>] [-w <value>]
 
 ARGUMENTS
   RAW_IDEA  Project idea description
@@ -332,7 +332,8 @@ FLAGS
   -p, --ton_reward_pool=<value>       TON reward pool (in nanoTON, e.g. 500000000 for 0.5 TON)
   -q, --quiet                         Output only the ID or key value
   -t, --token_symbol=<value>          Token symbol (e.g. MYTOK)
-  -w, --owner_wallet_address=<value>  (required) TON wallet address (raw 0:hex format)
+  -w, --owner_wallet_address=<value>  TON wallet address (raw 0:hex format). Auto-detected from connected wallet if
+                                      omitted.
       --task_notes=<value>            Optional task guidance for LLM plan generator
       --total_supply=<value>          Total token supply (default 1000000000)
 

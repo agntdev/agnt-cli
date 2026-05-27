@@ -102,6 +102,10 @@ export function getToken(): null | string {
   return loadCredentials()?.token ?? null;
 }
 
+export function getJwt(): string | null {
+  return loadCredentials()?.jwt ?? null;
+}
+
 export function isLoggedIn(): boolean {
   return getToken() !== null;
 }
