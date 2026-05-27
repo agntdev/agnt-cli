@@ -217,40 +217,35 @@ function readFileSessionRaw(): string | null {
   }
 }
 
+/** Recursively search for a TON raw address (0:<hex>) in nested objects. */
 function extractAddress(raw: string): string | null {
   try {
-    const session = JSON.parse(raw) as Record<string, unknown>;
-    for (const value of Object.values(session)) {
-      if (typeof value !== "string") continue;
-      try {
-        const parsed = JSON.parse(value);
-        // TonConnect SDK 3.x: wallet info at top-level .address
-        if (
-          parsed &&
-          typeof parsed === "object" &&
-          "address" in parsed &&
-          typeof parsed.address === "string"
-        ) {
-          return parsed.address;
-        }
-        // Some versions nest under .account.address
-        if (
-          parsed &&
-          typeof parsed === "object" &&
-          "account" in parsed &&
-          typeof parsed.account === "object" &&
-          parsed.account !== null &&
-          "address" in parsed.account &&
-          typeof parsed.account.address === "string"
-        ) {
-          return parsed.account.address;
-        }
-      } catch {
-        // Not JSON — skip
-      }
-    }
+    const parsed = JSON.parse(raw);
+    return findTonAddress(parsed);
   } catch {
-    // Invalid JSON
+    return null;
+  }
+}
+
+function findTonAddress(obj: unknown): string | null {
+  if (obj === null || obj === undefined) return null;
+  if (typeof obj !== "object") return null;
+
+  // Check each key-value pair recursively
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+    // Direct address match: any "address" key whose value looks like 0:<hex>
+    if (
+      key === "address" &&
+      typeof value === "string" &&
+      /^0:[0-9a-fA-F]{64}$/.test(value)
+    ) {
+      return value;
+    }
+    // Recurse into nested objects/arrays
+    if (typeof value === "object" && value !== null) {
+      const found = findTonAddress(value);
+      if (found) return found;
+    }
   }
   return null;
 }

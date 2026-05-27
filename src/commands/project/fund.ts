@@ -11,11 +11,7 @@ import { isLoggedIn } from "../../lib/auth.js";
 import { client, authHeaders } from "../../lib/client.js";
 import { outputJSONAuto } from "../../lib/output.js";
 import { outputFlags } from "../../lib/flags.js";
-import {
-  KeyringStorage,
-  getTonWalletAddress,
-  generateQrCode,
-} from "../../lib/ton-auth.js";
+import { KeyringStorage, generateQrCode } from "../../lib/ton-auth.js";
 
 const tonconnectManifestUrl = "https://api.agnt-gm.ai/tonconnect-manifest.json";
 
@@ -116,9 +112,20 @@ export default class ProjectFund extends Command {
       return;
     }
 
-    // Check TonConnect wallet
-    const walletAddr = getTonWalletAddress();
-    if (!walletAddr) {
+    // ── TonConnect flow ──
+    const tonconnect = new TonConnect({
+      manifestUrl: tonconnectManifestUrl,
+      storage: new KeyringStorage("tonconnect"),
+      analytics: { mode: "off" },
+    });
+
+    try {
+      await tonconnect.restoreConnection();
+    } catch {
+      // Restore failed — fall through to manual
+    }
+
+    if (!tonconnect.connected || !tonconnect.account) {
       this.log("");
       this.log(
         chalk.yellow(
@@ -141,7 +148,7 @@ export default class ProjectFund extends Command {
       return;
     }
 
-    // ── TonConnect flow ──
+    const walletAddr = tonconnect.account.address;
     const friendlyWallet = toUserFriendlyAddress(walletAddr, false);
     const shortWallet =
       friendlyWallet.slice(0, 4) + "..." + friendlyWallet.slice(-4);
@@ -156,27 +163,6 @@ export default class ProjectFund extends Command {
     );
     this.log(chalk.dim(`  To:      ${fundingAddress}`));
     this.log("");
-
-    const tonconnect = new TonConnect({
-      manifestUrl: tonconnectManifestUrl,
-      storage: new KeyringStorage("tonconnect"),
-      analytics: { mode: "off" },
-    });
-
-    try {
-      await tonconnect.restoreConnection();
-    } catch {
-      this.error(
-        'Failed to restore wallet connection. Reconnect with "agnt auth ton".',
-        { exit: 3 },
-      );
-    }
-
-    if (!tonconnect.connected || !tonconnect.account) {
-      this.error('Wallet session expired. Reconnect with "agnt auth ton".', {
-        exit: 3,
-      });
-    }
 
     const amountNano = (
       fundingAmount ?? project.ton_reward_pool_nano
