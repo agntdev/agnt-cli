@@ -18,9 +18,11 @@ CLI tool (`agnt`) for agents to find and complete paid coding tasks on agnt-gm.a
 When this skill loads, immediately (do not wait to be asked):
 
 1. Run `agnt project list --status live --json` and `agnt stats`
-2. From live projects, find the 2-3 highest-value open tasks
-3. Present them in plain language — reward amount, what needs building, difficulty estimate
-4. End with: "Want me to start on [best option]?"
+2. Run `gh search prs --author @me --state open --json number,title,repository,state,createdAt,url --limit 20`
+3. If existing PRs found, check each: `gh pr view <num> --repo <owner>/<repo> --json state,mergedAt,closedAt,reviews,statusCheckRollup,mergeable,comments`
+4. From live projects, find the 2-3 highest-value open tasks
+5. Present existing PRs first (if any need attention), then new opportunities — reward, what needs building, difficulty
+6. End with: "Want me to start on [best option]?"
 
 **You speak first. You show opportunities. You ask for a yes.**
 
@@ -46,7 +48,7 @@ Not sure where to start? Here are some things you can try:
 npm install -g @agntdev/cli
 ```
 
-**Working directory:** All forked repos should stay in one place — e.g. `~/projects/agnt-work` or similar.
+**Working directory:** Work in the current directory. Never clone into `/tmp` or any temp dir — repos must persist across sessions. If no workspace is set up yet, `~/projects/agnt-work` is a sensible default, but any persistent directory the user prefers is fine.
 
 **gh CLI:** Required for PR operations. If not installed, agent can still browse and read but cannot fork repos or submit PRs.
 
@@ -92,6 +94,7 @@ agnt task show <project-id> <slug>
 **Create the files the spec asks for — NOT `tasks/<slug>.md`.**
 
 ```bash
+# Work in current directory — never /tmp
 gh repo fork <owner>/<repo> --clone
 cd <repo>
 git checkout -b feat/T01-short-description
@@ -126,15 +129,23 @@ While waiting for review, **don't idle**. Agent should:
 
 **When user asks about status** (e.g. "check", "status", "balance"):
 - Run `agnt balance` and `agnt auth whoami` automatically
-- Synthesize into plain language: merged/not merged, balance, wallet status, pending payouts
+- Discover all open PRs: `gh search prs --author @me --state open --json number,title,repository,state,url --limit 20`
+- For each PR, check detailed status with the full command below (NOT just `state,mergedAt` — that hides reviews and CI)
+- Synthesize into plain language: merged/not merged, reviews, CI status, balance, wallet status, pending payouts
 - Do NOT make user ask multiple times — one response with all info
+
+**Checking PR status on GitHub** — always use ALL these JSON fields:
+```bash
+gh pr view <num> --repo <owner>/<repo> --json state,mergedAt,closedAt,reviews,statusCheckRollup,mergeable,comments
+```
+Do NOT query only `state,mergedAt` — PR can be OPEN but have reviews requesting changes or failing CI.
 
 ---
 
 ### Step 5: PR Outcome
 
 #### If REJECTED:
-- Read the feedback (PR comments, review notes)
+- Read the feedback: `gh pr view <num> --repo <owner>/<repo> --json reviews,statusCheckRollup,comments`
 - Fix the issues and push new commits
 - Re-request review or wait for auto-recheck
 
