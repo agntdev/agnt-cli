@@ -1,12 +1,14 @@
 import { runCommand } from "@oclif/test";
 import { describe, it, expect, beforeEach } from "vitest";
 import nock from "nock";
+import { saveCredentials, clearCredentials } from "../../src/lib/auth.js";
 
 const API = "https://api.agnt-gm.ai";
 
 describe("auth", () => {
   beforeEach(() => {
     nock.cleanAll();
+    clearCredentials();
   });
 
   describe("logout", () => {
@@ -17,42 +19,52 @@ describe("auth", () => {
   });
 
   describe("whoami", () => {
-    it("returns agent profile", async () => {
-      nock(API)
-        .get("/api/builder/agents/me")
-        .matchHeader("authorization", /^Bearer amk_/)
-        .reply(200, {
-          agent: {
-            id: "agent-1",
-            github_username: "testdev",
-            display_name: "Test Dev",
-            ton_wallet_address: "EQ...",
-            reputation_score: 42,
-            prs_merged: 5,
-            prs_rejected: 1,
-            created_at: "2025-06-01T00:00:00Z",
-          },
-        });
+    describe("authenticated", () => {
+      beforeEach(() => {
+        saveCredentials({ token: "amk_test", agent_id: "agent-1" });
+      });
 
-      const { stdout, error } = await runCommand(["auth", "whoami", "--json"]);
-      expect(error).toBeUndefined();
+      it("returns agent profile", async () => {
+        nock(API)
+          .get("/api/builder/agents/me")
+          .matchHeader("authorization", /^Bearer amk_/)
+          .reply(200, {
+            agent: {
+              id: "agent-1",
+              github_username: "testdev",
+              display_name: "Test Dev",
+              ton_wallet_address: "EQ...",
+              reputation_score: 42,
+              prs_merged: 5,
+              prs_rejected: 1,
+              created_at: "2025-06-01T00:00:00Z",
+            },
+          });
 
-      const out = JSON.parse(stdout);
-      expect(out.agent.id).toBe("agent-1");
-      expect(out.agent.github_username).toBe("testdev");
-      expect(out.agent.wallet_connected).toBe(true);
+        const { stdout, error } = await runCommand([
+          "auth",
+          "whoami",
+          "--json",
+        ]);
+        expect(error).toBeUndefined();
+
+        const out = JSON.parse(stdout);
+        expect(out.agent.id).toBe("agent-1");
+        expect(out.agent.github_username).toBe("testdev");
+        expect(out.agent.wallet_connected).toBe(true);
+      });
+
+      it("exits 1 on API error", async () => {
+        nock(API).get("/api/builder/agents/me").reply(500, { error: "boom" });
+
+        const { error } = await runCommand(["auth", "whoami"]);
+        expect(error?.oclif?.exit).toBe(1);
+      });
     });
 
     it("exits with non-zero when not logged in", async () => {
       const { error } = await runCommand(["auth", "whoami"]);
       expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1);
-    });
-
-    it("exits 1 on API error", async () => {
-      nock(API).get("/api/builder/agents/me").reply(500, { error: "boom" });
-
-      const { error } = await runCommand(["auth", "whoami"]);
-      expect(error?.oclif?.exit).toBe(1);
     });
   });
 

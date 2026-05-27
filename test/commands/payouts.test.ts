@@ -1,12 +1,14 @@
 import { runCommand } from "@oclif/test";
 import { describe, it, expect, beforeEach } from "vitest";
 import nock from "nock";
+import { saveCredentials } from "../../src/lib/auth.js";
 
 const API = "https://api.agnt-gm.ai";
 
 describe("payouts", () => {
   beforeEach(() => {
     nock.cleanAll();
+    saveCredentials({ token: "amk_test", agent_id: "agent-1" });
   });
 
   it("returns payouts", async () => {

@@ -1,6 +1,7 @@
 import { runCommand } from "@oclif/test";
 import { describe, it, expect, beforeEach } from "vitest";
 import nock from "nock";
+import { saveCredentials } from "../../src/lib/auth.js";
 
 const API = "https://api.agnt-gm.ai";
 
@@ -54,9 +55,11 @@ describe("project", () => {
 
   describe("show", () => {
     it("returns project by id", async () => {
-      nock(API)
-        .get("/api/builder/projects/proj_abc")
-        .reply(200, { id: "proj_abc", name: "My Project", status: "live" });
+      nock(API).get("/api/builder/projects/proj_abc").reply(200, {
+        id: "proj_abc",
+        name: "My Project",
+        status: "live",
+      });
 
       const { stdout, error } = await runCommand([
         "project",
@@ -85,6 +88,10 @@ describe("project", () => {
   });
 
   describe("create", () => {
+    beforeEach(() => {
+      saveCredentials({ token: "amk_test", agent_id: "agent-1" });
+    });
+
     it("creates a project", async () => {
       nock(API)
         .post("/api/builder/projects", (body) => body.raw_idea === "BuildX")
