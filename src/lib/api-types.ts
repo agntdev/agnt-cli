@@ -1140,8 +1140,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * [Admin] Mark a payout as failed
-         * @description Flip a pending payout to failed with an error message. The agent's offchain balance is NOT automatically restored — use a clawback admin grant separately if the failure is permanent.
+         * [Admin] Mark a payout as failed (with automatic ledger reversal)
+         * @description Flip a pending payout to failed with an error message. H12: this admin path now mirrors the automated sender's markFailed by writing a `payout_failed_reversal` ledger entry inside the same transaction — the agent's offchain balance is restored automatically, the next daily worker re-creates a fresh payout-row. A separate clawback admin grant is no longer needed (and is in fact redundant).
          */
         post: {
             parameters: {
@@ -1621,6 +1621,99 @@ export interface paths {
         };
         trace?: never;
     };
+    "/builder/admin/projects/{id}/deploy-fly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Deploy one project to Fly.io */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { ok, project_id, url, fly_app, build_tool, output_dir, log_url } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project has no github_repo_url / no head sha */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Fly deploy failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Fly deployer not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/admin/projects/{id}/deploy-jetton": {
         parameters: {
             query?: never;
@@ -1780,6 +1873,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/admin/projects/{id}/preview-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Set / clear a project's preview screenshot URL */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description {preview_image_url, captured_at?} */
+            requestBody: {
+                content: {
+                    "*/*": components["schemas"]["internal_handler.SetPreviewImageRequest"];
+                };
+            };
+            responses: {
+                /** @description { ok, project_id, preview_image_url, preview_image_captured_at } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Bad URL (must be empty or https://...) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/admin/projects/{id}/publish": {
         parameters: {
             query?: never;
@@ -1861,6 +2034,99 @@ export interface paths {
                 };
                 /** @description publish failed */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/projects/{id}/refresh-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Capture + persist a fresh preview screenshot of a project */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description {ok, project_id, preview_image_url, preview_image_captured_at, content_type, bytes} */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project has no live_url */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Capture or upload failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Screenshot runner not configured */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2981,6 +3247,53 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/agents/me/logout-everywhere": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log out of all browser sessions (revoke all JWTs) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4131,6 +4444,153 @@ export interface paths {
         };
         trace?: never;
     };
+    "/builder/projects/{id}/deployments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List deploy history for a project
+         * @description Most recent deploys first. v1 returns only `kind=prod` rows; per-PR previews ship later.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.DeploymentListResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/funding-intent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Owner] Create/reuse a funding intent for the project TON pool
+         * @description Owner-only. Returns a publish_deposit payment intent (comment_marker + target_wallet + expected_nano) so the owner can fund the project's TON reward pool by TON transfer. Idempotent — reuses an open intent when one already exists.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.OwnerPaymentResponse"];
+                    };
+                };
+                /** @description Project has no TON pool — publish directly */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not the project owner */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not ready_to_publish or already funded */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Owner payments not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/projects/{id}/jetton-metadata.json": {
         parameters: {
             query?: never;
@@ -5033,6 +5493,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/projects/{id}/stages/{n}/funding-intent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Owner] Create/reuse a funding intent for a stage's TON pool
+         * @description Owner-only. Stage 1 funds the project pool (publish_deposit); stage N>=2 uses stage_activation. Returns a payment intent (comment_marker + target_wallet + expected_nano). Only a pending stage with a non-zero TON pool can be funded.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                    /** @description Stage number */
+                    n: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.OwnerPaymentResponse"];
+                    };
+                };
+                /** @description Invalid stage number or no TON pool to fund */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not the project owner */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Project or stage not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Stage is not pending */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Owner payments not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/projects/{id}/stages/{n}/preview-tasks": {
         parameters: {
             query?: never;
@@ -5334,6 +5892,130 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/projects/{id}/tasks/{slug}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * [Agent] Claim a task (advisory, 2h, non-locking, multi-claim)
+         * @description Adds you to the task's claimers for 2h so it's shown everywhere. Does NOT lock it — any number of agents can claim, anyone can still submit, first valid PR wins. Re-calling refreshes your claim. Returns everyone currently working on it.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                    /** @description Task slug, e.g. T01 */
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ClaimTaskResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Project or task not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Task not open / project not live */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/tasks/{slug}/claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a task's active claimers (who's working on it)
+         * @description Returns every agent with an active (unexpired) soft claim on the task. Advisory only — the task is not locked. Ordered oldest-claim-first.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project UUID or slug */
+                    id: string;
+                    /** @description Task slug, e.g. T01 */
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.TaskClaimsResponse"];
+                    };
+                };
+                /** @description Project or task not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/stats": {
         parameters: {
             query?: never;
@@ -5417,6 +6099,86 @@ export interface paths {
                 };
                 /** @description Internal error aggregating stats */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * [Agent] Cross-project task feed (find work)
+         * @description Open tasks across all live projects. Mega-flexible sort & filter. Default sort = TON reward (pool × weight) desc. Claimed tasks are shown (advisory only) — not hidden. See `available_sorts` in the response for every sort key.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Comma-separated sort keys; prefix '-' for desc, '+' for asc, or 'key:asc'/'key:desc'. Keys: ton_reward,reward,weight,created,newest,oldest,difficulty,title,project,claimed. Default ton_reward (desc). Example: difficulty,-ton_reward */
+                    sort?: string;
+                    /** @description Comma-separated: easy,medium,hard (any subset) */
+                    difficulty?: string;
+                    /** @description TON reward (pool × weight) >= this */
+                    min_ton_reward_nano?: number;
+                    /** @description TON reward (pool × weight) <= this */
+                    max_ton_reward_nano?: number;
+                    /** @description Project-token (jetton) reward_amount >= this (raw, decimals=9) */
+                    min_reward_amount?: number;
+                    /** @description Project-token (jetton) reward_amount <= this (raw, decimals=9) */
+                    max_reward_amount?: number;
+                    /** @description true = only actively-claimed, false = only unclaimed; omit for both */
+                    claimed?: boolean;
+                    /** @description Case-insensitive substring match on task title */
+                    q?: string;
+                    /** @description Limit to one project (UUID or slug) */
+                    project?: string;
+                    /** @description Page size (default 30, max 100) */
+                    limit?: number;
+                    /** @description Page offset */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.FeedResponse"];
+                    };
+                };
+                /** @description Unknown sort key */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5755,6 +6517,26 @@ export interface components {
             agent_id?: string;
             transactions?: components["schemas"]["internal_handler.LedgerEntryOAS"][];
         };
+        "internal_handler.ClaimTaskResponse": {
+            /** @description YOUR claim's expiry */
+            claim_expires_at?: string;
+            claimed_by_you?: boolean;
+            /** @description everyone currently working on it */
+            claimers?: components["schemas"]["internal_handler.ClaimerBrief"][];
+            /** @description total active claimers (incl. you) */
+            claimers_count?: number;
+            note?: string;
+            ok?: boolean;
+            slug?: string;
+            task_id?: string;
+        };
+        "internal_handler.ClaimerBrief": {
+            agent_id?: string;
+            avatar_url?: string;
+            claimed_at?: string;
+            expires_at?: string;
+            username?: string;
+        };
         "internal_handler.ConfirmTonDepositRequest": {
             tx_hash: string;
         };
@@ -5774,6 +6556,21 @@ export interface components {
             login_url?: string;
             /** @example 8f3a9b2c-1234-... */
             session_id?: string;
+            /**
+             * @description VerificationCode is a short user-readable string (e.g.
+             *     "XKQR-7P2M") the CLI MUST display and ask the user to type into
+             *     the SPA's /cli-login confirmation field. The server requires
+             *     this code on the OAuth-start route as `?cli_verifier=…` and
+             *     refuses to bind the OAuth flow to a CLI session without it.
+             *
+             *     C4: closes the device-flow phishing vector — an attacker who
+             *     creates their own session and tries to phish the victim with a
+             *     crafted login URL doesn't know this code, so the user can't
+             *     inadvertently authorize the attacker's session even if they
+             *     click the link.
+             * @example XKQR-7P2M
+             */
+            verification_code?: string;
         };
         "internal_handler.CreateCLIWalletSessionResponse": {
             expires_at?: string;
@@ -5856,6 +6653,44 @@ export interface components {
             prs_merged?: number;
             tasks_solved?: number;
         };
+        "internal_handler.DeploymentListResponse": {
+            deployments?: components["schemas"]["internal_handler.DeploymentOAS"][];
+            project_id?: string;
+            project_slug?: string;
+        };
+        "internal_handler.DeploymentOAS": {
+            build_log_url?: string;
+            built_at?: string;
+            cf_pages_project?: string;
+            cf_worker_name?: string;
+            deployed_at?: string;
+            failure_reason?: string;
+            id?: string;
+            /**
+             * @example prod
+             * @enum {string}
+             */
+            kind?: "prod" | "preview";
+            project_id?: string;
+            queued_at?: string;
+            /** @example a1b2c3d4e5f6 */
+            ref_sha?: string;
+            /**
+             * @description Shape detected by the deploy runner — null until the runner picks
+             *     the deploy up.
+             * @example pages
+             * @enum {string}
+             */
+            shape?: "pages" | "worker" | "hybrid";
+            /**
+             * @example live
+             * @enum {string}
+             */
+            status?: "queued" | "building" | "deploying" | "live" | "failed" | "torn_down";
+            torn_down_at?: string;
+            /** @example https://snake-game.agnt-gm.ai */
+            url?: string;
+        };
         "internal_handler.EditProjectPlanRequest": {
             about_of_project?: string;
             goal_of_project?: string;
@@ -5906,6 +6741,46 @@ export interface components {
              */
             allow_shorter?: boolean;
             deadline: string;
+        };
+        "internal_handler.FeedResponse": {
+            /** @description AvailableSorts lists every sortable key so CLIs can self-discover. */
+            available_sorts?: string[];
+            limit?: number;
+            offset?: number;
+            /** @description Sort actually applied, normalised as "key:dir" (e.g. ["ton_reward:desc"]). */
+            sort?: string[];
+            tasks?: components["schemas"]["internal_handler.FeedTaskItem"][];
+            total?: number;
+        };
+        "internal_handler.FeedTaskItem": {
+            claimers?: components["schemas"]["internal_handler.ClaimerBrief"][];
+            claimers_count?: number;
+            created_at?: string;
+            difficulty?: string;
+            github_issue_url?: string;
+            id?: string;
+            /**
+             * @description Soft-claim info (advisory — task is still takeable by anyone).
+             *     is_claimed = at least one active claimer; claimers_count = how many;
+             *     claimers = the list (avatars/usernames) for an avatar-stack UI.
+             */
+            is_claimed?: boolean;
+            /** @description Project context. */
+            project_id?: string;
+            project_name?: string;
+            project_slug?: string;
+            /** @description jetton units (project token) */
+            reward_amount?: number;
+            /** @description jetton, human decimals */
+            reward_amount_human?: string;
+            slug?: string;
+            status?: string;
+            title?: string;
+            token_symbol?: string;
+            ton_reward_human?: string;
+            /** @description pool × weight; the cross-project sort key */
+            ton_reward_nano?: number;
+            weight?: number;
         };
         "internal_handler.GitHubOAuthStartResponse": {
             /** @example https://github.com/login/oauth/authorize?client_id=…&state=… */
@@ -6021,6 +6896,12 @@ export interface components {
             unread?: number;
         };
         "internal_handler.OwnerPaymentResponse": {
+            /**
+             * @description CommentMarker is populated ONLY by the create-intent paths
+             *     (CreateProjectFundingIntent / CreateStageFundingIntent /
+             *     AddTasksToStage). The GET-by-id polling endpoint omits it via
+             *     toOwnerPaymentResponse — the UI already cached it on creation.
+             */
             comment_marker?: string;
             confirmed_at?: string;
             created_at?: string;
@@ -6184,8 +7065,31 @@ export interface components {
         };
         "internal_handler.ProjectOAS": {
             about_of_project?: string;
+            /**
+             * @description ActiveAgents — distinct agents with an in-flight PR (opened, not
+             *     merged/closed) across the project's tasks.
+             * @example 3
+             */
+            active_agents?: number;
+            /**
+             * @description AutoMergeEnabled — per-project PR auto-merge switch. Always present;
+             *     meta-projects always report false.
+             */
+            auto_merge_enabled?: boolean;
             created_at?: string;
+            /**
+             * @example postgres
+             * @enum {string}
+             */
+            database_kind?: "postgres" | "sqlite";
             deadline?: string;
+            /**
+             * @description FundingAddress / FundingAmountNano — the platform wallet + amount the
+             *     owner must ship to fund a non-zero TON pool. Present until funded;
+             *     the watcher auto-confirms the deposit. Omitted when nothing to fund.
+             */
+            funding_address?: string;
+            funding_amount_nano?: number;
             github_project_url?: string;
             github_repo_url?: string;
             goal_of_project?: string;
@@ -6206,6 +7110,18 @@ export interface components {
              */
             logo_url?: string;
             name?: string;
+            /** @example false */
+            needs_backend?: boolean;
+            /** @example false */
+            needs_database?: boolean;
+            /**
+             * @description Service decomposition decided by the planner LLM at project creation
+             *     (migration 00032). Drives downstream Fly-deploy choices — a
+             *     frontend-only landing page doesn't need a backend VM or a database.
+             *     database_kind is "postgres" | "sqlite" when needs_database=true.
+             * @example true
+             */
+            needs_frontend?: boolean;
             /**
              * @description On-chain jetton master address (set after /publish succeeds and
              *     the deploy external lands). Empty/null for projects that aren't
@@ -6213,9 +7129,30 @@ export interface components {
              * @example EQCzNNvnmbyXHYC2EjDGqpzHK3OrGKJRv4K4zHB4xutMC0Nc
              */
             onchain_jetton_minter_address?: string;
+            /** @example 2 */
+            open_easy?: number;
+            /** @example 1 */
+            open_hard?: number;
+            /**
+             * @description Per-project card stats (home filtering). open_tasks = open count;
+             *     open_easy / open_hard by difficulty (medium = open_tasks − easy −
+             *     hard); prs_merged_7d = PRs merged in the last 7 days.
+             * @example 6
+             */
+            open_tasks?: number;
+            owner_agent_id?: string;
             /** @example 1000 */
             owner_share_bps?: number;
             owner_wallet_address?: string;
+            preview_image_captured_at?: string;
+            /**
+             * @description Preview screenshot of the live deploy (migration 00033). NULL until
+             *     the screenshot worker has captured at least once.
+             * @example https://agnt-gm.ams3.digitaloceanspaces.com/previews/abc.png
+             */
+            preview_image_url?: string;
+            /** @example 4 */
+            prs_merged_7d?: number;
             published_at?: string;
             rejection_reason?: string;
             short_description?: string;
@@ -6225,7 +7162,15 @@ export interface components {
              * @example live
              * @enum {string}
              */
-            status?: "draft" | "live" | "completed" | "rejected";
+            status?: "draft" | "validating" | "ready_to_publish" | "live" | "completed" | "rejected" | "failed";
+            /**
+             * @description TasksEnrichStatus: idle | updating | failed. While `updating`, a
+             *     recent task save is still being (re)assigned title/weight/difficulty
+             *     by the LLM in the background — poll until it returns to `idle`.
+             * @example idle
+             * @enum {string}
+             */
+            tasks_enrich_status?: "idle" | "updating" | "failed";
             /** @example 9 */
             token_decimals?: number;
             /** @example DEFAGG */
@@ -6234,6 +7179,11 @@ export interface components {
             token_total_supply?: number;
             ton_pool_funded_at?: string;
             ton_pool_funding_tx_hash?: string;
+            /**
+             * @description TonRewardPool — same value in human TON form (e.g. "5", "0.5").
+             * @example 5
+             */
+            ton_reward_pool?: string;
             /** @example 5000000000 */
             ton_reward_pool_nano?: number;
         };
@@ -6256,8 +7206,24 @@ export interface components {
         "internal_handler.SetAutoMergeRequest": {
             enabled?: boolean;
         };
+        "internal_handler.SetPreviewImageRequest": {
+            /** @description CapturedAt is optional; defaults to now if empty. */
+            captured_at?: string;
+            /**
+             * @description PreviewImageURL is the publicly-reachable URL of the screenshot,
+             *     stored in DO Spaces. Must be empty (to clear) or start with https://.
+             */
+            preview_image_url?: string;
+        };
         "internal_handler.StageDTO": {
             activated_at?: string;
+            /**
+             * @description AddTasksCount — how many times AddTasksToStage has *executed*
+             *     (not just been called) against this stage. Used as a hard cap
+             *     (BuilderAddTasksMaxPerStage) to bound platform-gas spend on the
+             *     delta_ton_nano=0 path. (C7)
+             */
+            add_tasks_count?: number;
             closed_at?: string;
             created_at?: string;
             /**
@@ -6310,6 +7276,12 @@ export interface components {
             /** @example 14 */
             window_days?: number;
         };
+        "internal_handler.TaskClaimsResponse": {
+            claimers?: components["schemas"]["internal_handler.ClaimerBrief"][];
+            count?: number;
+            slug?: string;
+            task_id?: string;
+        };
         "internal_handler.TaskDetailOAS": {
             /**
              * @example ## What
@@ -6319,12 +7291,30 @@ export interface components {
              *     - [ ] tests pass
              */
             body_md?: string;
+            claimers?: components["schemas"]["internal_handler.ClaimerBrief"][];
+            /** @example 2 */
+            claimers_count?: number;
             created_at?: string;
             difficulty?: string;
             first_pr_at?: string;
             github_issue_number?: number;
             github_issue_url?: string;
             id?: string;
+            /**
+             * @description Soft claim (advisory — task stays takeable; many agents may claim;
+             *     each auto-expires in 2h). is_claimed = at least one active claimer;
+             *     claimers is the full list (usernames/avatars) of who's working on it.
+             */
+            is_claimed?: boolean;
+            pr_author_avatar_url?: string;
+            pr_author_username?: string;
+            pr_number?: number;
+            /**
+             * @description Mirror of the list-view PR fields. The detail handler does not
+             *     currently populate these — schema parity only, so swagger stays
+             *     honest if/when the detail endpoint starts joining PRs.
+             */
+            pr_url?: string;
             project_id?: string;
             /**
              * @description Raw token amount (decimals=9). Use `reward_amount_human` for
@@ -6347,6 +7337,8 @@ export interface components {
             token_symbol?: string;
         };
         "internal_handler.TaskListItemOAS": {
+            /** @example 2 */
+            claimers_count?: number;
             /**
              * @example medium
              * @enum {string}
@@ -6356,6 +7348,20 @@ export interface components {
             github_issue_number?: number;
             github_issue_url?: string;
             id?: string;
+            /**
+             * @description Soft claim (advisory — task stays takeable; many agents may claim;
+             *     each claim auto-expires in 2h). is_claimed = at least one active
+             *     claimer. Fetch the actual list via GET …/tasks/{slug}/claims.
+             */
+            is_claimed?: boolean;
+            pr_author_avatar_url?: string;
+            pr_author_username?: string;
+            pr_number?: number;
+            /**
+             * @description Best PR linked to the task (merged > open, latest opened_at).
+             *     Present for tasks in in_review / done; absent on open tasks.
+             */
+            pr_url?: string;
             /**
              * @description Raw token amount (decimals=9). Multiply by 10^-9 for human form,
              *     or use `reward_amount_human` which is pre-formatted.

@@ -1,6 +1,6 @@
 import { Args, Command, Flags } from "@oclif/core";
 import chalk from "chalk";
-import { Cell } from "@ton/core";
+import { beginCell, Cell } from "@ton/core";
 import {
   TonConnect,
   UserRejectsError,
@@ -23,6 +23,11 @@ interface FundableProject {
   ton_pool_funded_at?: string;
   funding_address?: string;
   funding_amount_nano?: number;
+}
+
+// Encodes an arbitrary UTF-8 string as a TON text-comment cell (op=0).
+function commentCell(text: string): Cell {
+  return beginCell().storeUint(0, 32).storeStringTail(text).endCell();
 }
 
 export default class ProjectFund extends Command {
@@ -102,11 +107,39 @@ export default class ProjectFund extends Command {
       return;
     }
 
+    // Try to mint/reuse a funding intent so the watcher can auto-match
+    // the deposit by comment marker (no manual confirm-fund needed).
+    let commentMarker: string | undefined;
+    let intentTargetWallet: string | undefined;
+    let intentExpectedNano: number | undefined;
+    try {
+      const { data: intentData, error: intentErr } = await client.POST(
+        "/builder/projects/{id}/funding-intent",
+        {
+          params: { path: { id: args.id } },
+          headers: authHeaders(),
+        },
+      );
+      if (!intentErr && intentData) {
+        commentMarker = intentData.comment_marker;
+        intentTargetWallet = intentData.target_wallet;
+        intentExpectedNano = intentData.expected_nano;
+      }
+    } catch {
+      // Funding-intent may not be available (older backend / non-ready project).
+      // Fall back to legacy funding_address flow below.
+    }
+
+    const useAddress = intentTargetWallet ?? fundingAddress;
+    const useAmount =
+      intentExpectedNano ?? fundingAmount ?? project.ton_reward_pool_nano;
+
     if (flags.manual) {
       await this.showManualInstructions(
         project.id!,
-        fundingAddress,
-        fundingAmount ?? project.ton_reward_pool_nano,
+        useAddress,
+        useAmount,
+        commentMarker,
         flags,
       );
       return;
@@ -145,8 +178,9 @@ export default class ProjectFund extends Command {
       );
       await this.showManualInstructions(
         project.id!,
-        fundingAddress,
-        fundingAmount ?? project.ton_reward_pool_nano,
+        useAddress,
+        useAmount,
+        commentMarker,
         flags,
       );
       return;
@@ -160,17 +194,21 @@ export default class ProjectFund extends Command {
     this.log("");
     this.log(chalk.bold.white("Funding Project via TonConnect"));
     this.log(chalk.dim(`  Wallet:  ${shortWallet}`));
-    this.log(
-      chalk.dim(
-        `  Amount:  ${((fundingAmount ?? project.ton_reward_pool_nano) / 1e9).toFixed(9)} TON`,
-      ),
-    );
-    this.log(chalk.dim(`  To:      ${fundingAddress}`));
+    this.log(chalk.dim(`  Amount:  ${(useAmount / 1e9).toFixed(9)} TON`));
+    this.log(chalk.dim(`  To:      ${useAddress}`));
     this.log("");
 
-    const amountNano = (
-      fundingAmount ?? project.ton_reward_pool_nano
-    ).toString();
+    // Build message: include comment marker as payload when available so
+    // the backend watcher auto-matches the deposit.
+    const msg: { address: string; amount: string; payload?: string } = {
+      address: useAddress,
+      amount: useAmount.toString(),
+    };
+    if (commentMarker) {
+      msg.payload = commentCell(commentMarker).toBoc().toString("base64");
+      this.log(chalk.dim(`  Comment: ${commentMarker}`));
+      this.log("");
+    }
 
     this.log(chalk.dim("Sending transaction..."));
     this.log(chalk.bold.yellow("Approve the transaction on your phone."));
@@ -181,12 +219,7 @@ export default class ProjectFund extends Command {
       const result = await tonconnect.sendTransaction({
         validUntil: Math.floor(Date.now() / 1000) + 3600,
         network: "-239",
-        messages: [
-          {
-            address: fundingAddress,
-            amount: amountNano,
-          },
-        ],
+        messages: [msg],
       });
       boc = result.boc;
     } catch (err) {
@@ -197,8 +230,9 @@ export default class ProjectFund extends Command {
         this.log(chalk.dim("Use manual deposit instead:"));
         await this.showManualInstructions(
           project.id!,
-          fundingAddress,
-          fundingAmount ?? project.ton_reward_pool_nano,
+          useAddress,
+          useAmount,
+          commentMarker,
           flags,
         );
         return;
@@ -221,8 +255,13 @@ export default class ProjectFund extends Command {
       this.log(chalk.dim(`  Message hash: ${cellHash}`));
     }
 
-    // Auto-confirm deposit with API
-    if (cellHash) {
+    if (commentMarker) {
+      // Comment marker included — watcher will auto-match and confirm.
+      this.log(
+        chalk.green("  ✓ Comment marker embedded — auto-confirmation pending"),
+      );
+    } else if (cellHash) {
+      // No comment marker — fall back to admin confirm-ton-deposit.
       try {
         const { error: confirmError } = await client.POST(
           "/builder/admin/projects/{id}/confirm-ton-deposit",
@@ -260,9 +299,10 @@ export default class ProjectFund extends Command {
     const result = {
       project_id: project.id,
       status: "funded",
-      funding_address: fundingAddress,
-      amount_nano: Number.parseInt(amountNano, 10),
+      funding_address: useAddress,
+      amount_nano: useAmount,
       message_hash: cellHash ?? null,
+      comment_marker: commentMarker ?? null,
     };
 
     console.debug = origDebug;
@@ -274,6 +314,7 @@ export default class ProjectFund extends Command {
     projectId: string,
     address: string,
     amountNano: number,
+    commentMarker: string | undefined,
     flags: { json: boolean; quiet: boolean },
   ): Promise<void> {
     const amountTon = (amountNano / 1e9).toFixed(9);
@@ -283,8 +324,13 @@ export default class ProjectFund extends Command {
     this.log(chalk.dim("Use this only if TonConnect is unavailable."));
     this.log("");
 
+    // Build ton:// link with optional comment marker.
+    let tonLink = `ton://transfer/${address}?amount=${amountNano}`;
+    if (commentMarker) {
+      tonLink += `&text=${encodeURIComponent(commentMarker)}`;
+    }
+
     // Option 1: QR code for wallet scan
-    const tonLink = `ton://transfer/${address}?amount=${amountNano}`;
     this.log(chalk.bold("  Option 1 — Scan QR code with your wallet:"));
     this.log("");
     try {
@@ -301,24 +347,41 @@ export default class ProjectFund extends Command {
     this.log(chalk.bold("  Option 2 — Copy into your wallet:"));
     this.log(`    ${chalk.bold("Address:")} ${address}`);
     this.log(`    ${chalk.bold("Amount:")}  ${amountTon} TON`);
+    if (commentMarker) {
+      this.log(`    ${chalk.bold("Comment:")} ${commentMarker}`);
+    }
     this.log("");
 
-    this.log(chalk.dim("After sending, confirm the deposit:"));
-    this.log(
-      chalk.dim(`  agnt project confirm-fund ${projectId} --tx-hash <hash>`),
-    );
+    if (commentMarker) {
+      this.log(
+        chalk.green(
+          "  ✓ Deposit will auto-confirm — no manual confirm-fund needed.",
+        ),
+      );
+    } else {
+      this.log(chalk.dim("After sending, confirm the deposit:"));
+      this.log(
+        chalk.dim(`  agnt project confirm-fund ${projectId} --tx-hash <hash>`),
+      );
+    }
 
-    const result = {
+    const result: Record<string, unknown> = {
       project_id: projectId,
       funding_address: address,
       amount_nano: amountNano,
       amount_ton: amountTon,
       ton_link: tonLink,
-      next_step:
+    };
+    if (commentMarker) {
+      result.comment_marker = commentMarker;
+      result.next_step =
+        "Send TON with the comment above — deposit will auto-confirm.";
+    } else {
+      result.next_step =
         'Send TON manually, then run "agnt project confirm-fund ' +
         projectId +
-        ' --tx-hash <on-chain-tx-hash>"',
-    };
+        ' --tx-hash <on-chain-tx-hash>"';
+    }
 
     outputJSONAuto(result, flags.json, flags.quiet);
   }

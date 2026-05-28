@@ -248,7 +248,7 @@ describe("project", () => {
       expect(error?.oclif?.exit).toBe(1);
     });
 
-    it("shows manual instructions when no wallet connected", async () => {
+    it("shows manual instructions with comment marker when intent succeeds", async () => {
       nock(API)
         .get("/api/builder/projects/proj_1")
         .reply(200, {
@@ -261,18 +261,28 @@ describe("project", () => {
           },
         });
 
-      // No wallet → falls through to manual instructions, exits 0
+      // Funding-intent succeeds — comment marker enables auto-confirm
+      nock(API).post("/api/builder/projects/proj_1/funding-intent").reply(200, {
+        comment_marker: "agnt:pay:abcdef12",
+        target_wallet: "0:target_wallet",
+        expected_nano: 500000000,
+      });
+
+      // --manual skips TonConnect, goes straight to instructions
       const { stdout, error } = await runCommand([
         "project",
         "fund",
         "proj_1",
+        "--manual",
         "--json",
       ]);
 
       expect(error).toBeUndefined();
       const out = JSON.parse(stdout);
-      expect(out.funding_address).toBe("0:fundme_addr");
+      expect(out.funding_address).toBe("0:target_wallet");
+      expect(out.comment_marker).toBe("agnt:pay:abcdef12");
       expect(out.amount_nano).toBe(500000000);
+      expect(out.next_step).toContain("auto-confirm");
     });
 
     it("shows manual instructions with --manual flag", async () => {
@@ -288,6 +298,11 @@ describe("project", () => {
           },
         });
 
+      // Funding-intent fails — falls back to legacy without comment
+      nock(API)
+        .post("/api/builder/projects/proj_1/funding-intent")
+        .reply(409, { error: "project is not ready_to_publish" });
+
       const { stdout, error } = await runCommand([
         "project",
         "fund",
@@ -300,6 +315,39 @@ describe("project", () => {
       const out = JSON.parse(stdout);
       expect(out.funding_address).toBe("0:fundme_addr");
       expect(out.amount_ton).toBe("1.000000000");
+      expect(out.next_step).toContain("project confirm-fund");
+    });
+
+    it("falls back to legacy when funding-intent is unavailable", async () => {
+      nock(API)
+        .get("/api/builder/projects/proj_1")
+        .reply(200, {
+          project: {
+            id: "proj_1",
+            name: "Unfunded",
+            ton_reward_pool_nano: 500000000,
+            funding_address: "0:fundme_addr",
+            funding_amount_nano: 500000000,
+          },
+        });
+
+      // funding-intent endpoint not available (404 = older backend)
+      nock(API)
+        .post("/api/builder/projects/proj_1/funding-intent")
+        .reply(404, { error: "not_found" });
+
+      const { stdout, error } = await runCommand([
+        "project",
+        "fund",
+        "proj_1",
+        "--manual",
+        "--json",
+      ]);
+
+      expect(error).toBeUndefined();
+      const out = JSON.parse(stdout);
+      expect(out.funding_address).toBe("0:fundme_addr");
+      expect(out.comment_marker).toBeUndefined();
       expect(out.next_step).toContain("project confirm-fund");
     });
   });
