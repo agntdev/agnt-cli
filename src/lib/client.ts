@@ -33,12 +33,18 @@ export async function tryRecoverAuth(): Promise<boolean> {
   const { data, error } = await client.POST("/builder/agents/me/api-keys", {
     headers: jwtHeaders,
   });
-  if (error || !data?.token) return false;
+  // Server returns "token" per spec, but older versions return "key"
+  const newToken =
+    ((data as Record<string, unknown> | undefined)?.token as
+      | string
+      | undefined) ??
+    ((data as Record<string, unknown> | undefined)?.key as string | undefined);
+  if (error || !newToken) return false;
 
   // Save new key, preserving other creds
   const creds = loadCredentials();
   if (creds) {
-    saveCredentials({ ...creds, token: data.token });
+    saveCredentials({ ...creds, token: newToken });
   }
 
   return true;

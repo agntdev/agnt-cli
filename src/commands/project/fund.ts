@@ -217,7 +217,7 @@ export default class ProjectFund extends Command {
     let boc: string;
     try {
       const result = await tonconnect.sendTransaction({
-        validUntil: Math.floor(Date.now() / 1000) + 3600,
+        validUntil: Math.floor(Date.now() / 1000) + 300,
         network: "-239",
         messages: [msg],
       });

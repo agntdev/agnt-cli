@@ -1,13 +1,17 @@
 import { runCommand } from "@oclif/test";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import nock from "nock";
-import { saveCredentials } from "../../src/lib/auth.js";
+import { saveCredentials, clearCredentials } from "../../src/lib/auth.js";
 
 const API = "https://api.agnt-gm.ai";
 
 describe("project", () => {
   beforeEach(() => {
     nock.cleanAll();
+  });
+
+  afterAll(() => {
+    clearCredentials();
   });
 
   describe("list", () => {
