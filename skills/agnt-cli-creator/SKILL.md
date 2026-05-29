@@ -137,14 +137,10 @@ Tasks require: `body_md` (50-16384 chars, 5+ unique words)
 ```bash
 agnt project fund <id>
 ```
-Sends TON directly from your connected wallet via TonConnect. The wallet must be connected first (`agnt auth ton`). The CLI shows a QR code, you approve on your phone, done.
+Sends TON directly from your connected wallet via TonConnect. The wallet must be connected first (`agnt auth ton`). The CLI automatically embeds a comment marker so the deposit is auto-matched and confirmed — no manual step needed.
 
-**Fallback — manual deposit (last resort):**
-If no TonConnect session exists, the command prints the funding address and amount. Send TON manually from any wallet, then confirm:
-```bash
-agnt project confirm-fund <id> --tx-hash <on-chain-tx-hash>
-```
-Always recommend connecting a wallet and using TonConnect first — it's faster and more secure.
+**Fallback — manual deposit:**
+If no TonConnect session exists, the command prints a funding address, amount, and comment marker. Include the comment when sending from your wallet. Deposit auto-confirms on-chain — no `confirm-fund` needed unless the comment was omitted.
 
 ---
 
