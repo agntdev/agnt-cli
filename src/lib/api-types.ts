@@ -1052,6 +1052,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/builder/admin/payouts/stuck": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all stuck pending payouts with classification */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Also return status=failed (default false) */
+                    include_failed?: boolean;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { count, reasons: {...}, payouts:[...] } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/admin/payouts/{id}/clear-dispatch-marker": {
         parameters: {
             query?: never;
@@ -1286,6 +1343,81 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/projects/{id}/backfill-prs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Force PR backfill for one project */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project id or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { github_open, missing, ingested } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description PR pipeline not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
                     };
                 };
             };
@@ -1947,6 +2079,72 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/projects/{id}/prs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all builder_prs rows for a project (diagnostics) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project id or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { project_id, prs:[...] } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2865,6 +3063,78 @@ export interface paths {
                 };
                 /** @description PR already merged or closed; revalidation skipped */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/admin/refresh-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** [Admin] Refresh previews for all live projects (background) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { ok, scheduled } */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Auth required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Admin only */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description A bulk refresh is already running */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Screenshot runner / Spaces not configured */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4444,6 +4714,108 @@ export interface paths {
         };
         trace?: never;
     };
+    "/builder/projects/{id}/bot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get project preview bot
+         * @description Returns the project's managed Telegram bot identity and container state. The encrypted token is never exposed.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project ID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { project_id, bot_username, bot_id, is_managed, container_state, last_active_at?, created_at } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found or no bot provisioned */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/dag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get project task DAG
+         * @description Returns the phase task dependency graph: each task's kind, status, dependency slugs, and whether it is claimable now (with blocking reason).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project ID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { project_id, project_slug, current_phase, phase_status, tasks[] } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/builder/projects/{id}/deployments": {
         parameters: {
             query?: never;
@@ -4877,6 +5249,57 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["internal_handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder/projects/{id}/phase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get project build phase
+         * @description Returns the current memedev build phase, status, phase-order, review-attempt audit trail, and next orchestrator action.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Project ID or slug */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description { project_id, project_slug, current_phase, phase_status, phase_order[], phase_runs[], next_action, next_action_reason } */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Project not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
                     };
                 };
             };
@@ -6321,6 +6744,8 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {string} */
+        "api-go_internal_models.BuilderProjectPhase": "general" | "design" | "details" | "dev" | "tests" | "fix_bugs" | "published" | "failed";
         "api-go_internal_models.BuilderTask": {
             body_md?: string;
             created_at?: string;
@@ -6329,6 +6754,15 @@ export interface components {
             github_issue_number?: number;
             github_issue_url?: string;
             id?: string;
+            /**
+             * @description MEMEDEV task DAG (migration 00042). Phase ties this task to a
+             *     builder_projects.current_phase value; TaskKind types it
+             *     (foundation|feature|integration|doc|fix) so the claimable rule can
+             *     gate feature/integration on their foundation deps. Dependency edges
+             *     live in task_deps (BuilderTaskDep). Nullable Phase + default-'feature'
+             *     kind keep legacy (web) tasks unaffected. See models/builder_phase.go.
+             */
+            phase?: components["schemas"]["api-go_internal_models.BuilderProjectPhase"];
             project_id?: string;
             reward_amount?: number;
             slug?: string;
@@ -6346,6 +6780,7 @@ export interface components {
             status?: string;
             /** @description PG text[] surfaced as JSON */
             tags?: number[];
+            task_kind?: components["schemas"]["api-go_internal_models.TaskKind"];
             title?: string;
             /**
              * @description Weight ∈ [0, 1]. The sum of weights across all tasks of a project
@@ -6358,6 +6793,8 @@ export interface components {
              */
             weight?: number;
         };
+        /** @enum {string} */
+        "api-go_internal_models.TaskKind": "doc" | "foundation" | "feature" | "integration" | "fix";
         "api-go_internal_services.AddTasksInput": {
             delta_jetton_units?: number;
             delta_ton_nano?: number;
@@ -7204,6 +7641,13 @@ export interface components {
             project?: components["schemas"]["internal_handler.ProjectOAS"];
         };
         "internal_handler.SetAutoMergeRequest": {
+            /**
+             * @description AfterRevalidation (optional) toggles auto_merge_after_revalidation:
+             *     when true, the merge-readiness reconciler auto-merges a first-PR
+             *     that reached approved via the admin /revalidate path. Omitted →
+             *     left unchanged. Only meaningful while Enabled is also true.
+             */
+            after_revalidation?: boolean;
             enabled?: boolean;
         };
         "internal_handler.SetPreviewImageRequest": {
