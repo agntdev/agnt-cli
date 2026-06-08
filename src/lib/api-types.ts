@@ -5270,7 +5270,7 @@ export interface paths {
         };
         /**
          * Get project build phase
-         * @description Returns the current memedev build phase, status, phase-order, review-attempt audit trail, and next orchestrator action.
+         * @description Returns the current agntdev build phase, status, phase-order, review-attempt audit trail, and next orchestrator action.
          */
         get: {
             parameters: {
@@ -6755,7 +6755,7 @@ export interface components {
             github_issue_url?: string;
             id?: string;
             /**
-             * @description MEMEDEV task DAG (migration 00042). Phase ties this task to a
+             * @description AGNTDEV task DAG (migration 00042). Phase ties this task to a
              *     builder_projects.current_phase value; TaskKind types it
              *     (foundation|feature|integration|doc|fix) so the claimable rule can
              *     gate feature/integration on their foundation deps. Dependency edges

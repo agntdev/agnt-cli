@@ -5,7 +5,7 @@ import { outputJSON } from "../../lib/output.js";
 import { client } from "../../lib/client.js";
 
 export default class PhaseShow extends Command {
-  static description = "Show the current memedev build phase of a project";
+  static description = "Show the current agntdev build phase of a project";
 
   static examples = [
     "<%= config.bin %> phase show proj_abc123",

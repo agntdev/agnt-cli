@@ -5,7 +5,7 @@ import { outputJSON } from "../../lib/output.js";
 import { client } from "../../lib/client.js";
 
 export default class BotShow extends Command {
-  static description = "Show the managed Telegram bot for a memedev project";
+  static description = "Show the managed Telegram bot for an agntdev project";
 
   static examples = [
     "<%= config.bin %> bot show proj_abc123",
