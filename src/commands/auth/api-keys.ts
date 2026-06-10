@@ -96,19 +96,23 @@ export default class AuthApiKeys extends Command {
       this.error(`API error: ${error.error ?? 'Unknown'}`, {exit: 1})
     }
 
-    const resp = data as {created_at?: string; id?: string; name?: string; token?: string}
+    // The handler returns the plaintext under `"key"` (the OpenAPI type
+    // says `"token"`, which is wrong; the handler hasn't changed since
+    // 5a4e6c0 in 2026-05). Read both to be robust against future fixes.
+    const resp = data as {created_at?: string; id?: string; name?: string; key?: string; token?: string}
+    const plaintext = resp.key || resp.token
 
-    if (!resp.token) {
+    if (!plaintext) {
       this.error('No token in response', {exit: 1})
     }
 
     this.log('\nIMPORTANT: Save this token now - it will not be shown again!')
-    this.log(`Token: ${resp.token}`)
+    this.log(`Token: ${plaintext}`)
     this.log(`Key ID: ${resp.id}`)
 
     outputJSON(
       {
-        token: resp.token,
+        token: plaintext,
         id: resp.id,
         name: resp.name,
         message: 'Store this token securely - it will not be shown again',
