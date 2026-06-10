@@ -107,6 +107,12 @@ export default class TaskClaim extends Command {
     // Print the canonical branch + PR recipe so the agent doesn't have to
     // guess the format. F1 of post-launch feedback: branch+title trap cost
     // a real builder a redo. The skill and the CLI MUST agree.
+    //
+    // Title format: `[<task-slug>] <task title>`. The platform's PR→task
+    // matcher (agnt-api commit 568c0d4) now matches the leading
+    // `[<slug>]` against project task slugs directly. Putting the task
+    // slug in brackets means the matcher takes the bracket path and we
+    // don't have to rely on the T-number regex fallback.
     const username = await fetchGitHubUsername();
     const projectSlug = String(
       (data as Record<string, unknown> | undefined)?.project_slug ?? args.projectId,
@@ -115,13 +121,14 @@ export default class TaskClaim extends Command {
       (data as Record<string, unknown> | undefined)?.task_title ?? args.slug,
     );
     const branch = `agent/${username}/${args.slug}`;
-    const title = `[${projectSlug}] ${args.slug} — ${taskTitle}`;
+    const title = `[${args.slug}] ${taskTitle}`;
     const prBody = `Claimed via: agnt task claim ${projectSlug} ${args.slug}`;
 
     process.stdout.write(
       chalk.cyan("\nOpen the PR with:\n") +
         chalk.dim(`  Branch: ${branch}\n`) +
-        chalk.dim(`  Title:  ${title}\n`) +
+        chalk.dim(`  Title:  ${title}`) +
+        chalk.dim(`   (project: ${projectSlug})\n`) +
         chalk.bold(
           `\n  gh pr create --base main --head ${branch} \\\n` +
             `    --title "${title}" \\\n` +

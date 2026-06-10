@@ -312,17 +312,17 @@ describe("task", () => {
       ]);
       expect(error).toBeUndefined();
 
-      // Branch and title use the canonical format.
+      // Branch and title use the canonical format. The leading `[T901]`
+      // bracket is matched verbatim against project task slugs by the
+      // platform's PR→task matcher (agnt-api 568c0d4), so we don't have
+      // to rely on the T-number regex fallback.
       expect(stdout).toContain("Branch: agent/laontme/T901");
-      expect(stdout).toContain(
-        'Title:  [hydrationhelper] T901 — Author the design doc',
-      );
+      expect(stdout).toContain("Title:  [T901] Author the design doc");
+      expect(stdout).toContain("(project: hydrationhelper)");
       // gh pr create command is printed ready-to-paste.
       expect(stdout).toContain("gh pr create");
       expect(stdout).toContain("--head agent/laontme/T901");
-      expect(stdout).toContain(
-        '--title "[hydrationhelper] T901 — Author the design doc"',
-      );
+      expect(stdout).toContain('--title "[T901] Author the design doc"');
       expect(stdout).toContain(
         '--body "Claimed via: agnt task claim hydrationhelper T901"',
       );
