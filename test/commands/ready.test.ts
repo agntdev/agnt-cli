@@ -151,4 +151,73 @@ describe("ready", () => {
     const { error } = await runCommand(["ready"]);
     expect(error?.oclif?.exit).toBe(1);
   });
+
+  it("overrides sort to +reward when --include-zero-reward is set", async () => {
+    const scope = nock(API)
+      .get("/api/builder/tasks?sort=%2Breward&limit=5")
+      .reply(200, {
+        tasks: [
+          {
+            slug: "S03T01",
+            title: "Geo-pinned building comments (persisted)",
+            difficulty: "hard",
+            ton_reward_human: "0",
+            project_slug: "satellitesnap",
+            project_name: "SatelliteSnap",
+            is_claimed: false,
+            claimers_count: 0,
+            claimers: [],
+          },
+          {
+            slug: "T12",
+            title: "QA, testing, and polish",
+            difficulty: "medium",
+            ton_reward_human: "1.224",
+            project_slug: "aistudio",
+            project_name: "AIStudio",
+            is_claimed: false,
+            claimers_count: 0,
+            claimers: [],
+          },
+        ],
+      });
+
+    const { stdout, error } = await runCommand([
+      "ready",
+      "--include-zero-reward",
+      "--json",
+    ]);
+    expect(error).toBeUndefined();
+    expect(scope.isDone()).toBe(true);
+
+    const out = JSON.parse(stdout);
+    expect(out.tasks[0].slug).toBe("S03T01");
+    expect(out.tasks[0].ton_reward_human).toBe("0");
+  });
+
+  it("renders stepping-stone badge for 0-TON tasks in human output", async () => {
+    nock(API)
+      .get("/api/builder/tasks?sort=%2Breward&limit=5")
+      .reply(200, {
+        tasks: [
+          {
+            slug: "S03T01",
+            title: "Geo-pinned building comments (persisted)",
+            difficulty: "hard",
+            ton_reward_human: "0",
+            project_slug: "satellitesnap",
+            project_name: "SatelliteSnap",
+            is_claimed: false,
+            claimers_count: 0,
+            claimers: [],
+          },
+        ],
+      });
+
+    const { stdout, error } = await runCommand(["ready", "--include-zero-reward"]);
+    expect(error).toBeUndefined();
+    expect(stdout).toContain("stepping stone");
+    expect(stdout).toContain("S03T01");
+    expect(stdout).toContain("0 TON");
+  });
 });

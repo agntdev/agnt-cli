@@ -14,6 +14,7 @@ export default class Ready extends Command {
     "<%= config.bin %> ready",
     "<%= config.bin %> ready --limit 10",
     "<%= config.bin %> ready --sort difficulty",
+    "<%= config.bin %> ready --include-zero-reward",
     "<%= config.bin %> ready --json",
   ];
 
@@ -34,6 +35,11 @@ export default class Ready extends Command {
       char: "d",
       description: "Filter by difficulty: easy, medium, hard (comma-separated)",
     }),
+    "include-zero-reward": Flags.boolean({
+      description:
+        "Surface 0-TON stepping-stone tasks (they unlock bigger paid tasks downstream). Overrides default sort to +reward so 0-TON tasks come first.",
+      default: false,
+    }),
   };
 
   async run(): Promise<void> {
@@ -48,11 +54,18 @@ export default class Ready extends Command {
       this.error("limit must be at least 1", { exit: 2 });
     }
 
+    // When --include-zero-reward is set, override the sort to +reward
+    // (lowest first) so 0-TON stepping-stone tasks bubble to the top.
+    // The user can still see paid tasks by raising --limit.
+    const effectiveSort = flags["include-zero-reward"]
+      ? "+reward"
+      : flags.sort;
+
     const { data, error } = await client.GET("/builder/tasks", {
       headers: authHeaders(),
       params: {
         query: {
-          sort: flags.sort,
+          sort: effectiveSort,
           limit: flags.limit,
           difficulty: flags.difficulty,
         },
@@ -107,10 +120,19 @@ export default class Ready extends Command {
         ? chalk.yellow(` [${claimersCount} claiming]`)
         : chalk.green(" [open]");
 
+      // 0-TON tasks are stepping stones — they unlock downstream paid
+      // tasks. Surface that so a builder doesn't skip them.
+      const isSteppingStone =
+        reward === "0" || reward === "0.0" || reward === "0.00";
+      const steppingStoneBadge = isSteppingStone
+        ? chalk.dim(" 🪨 stepping stone")
+        : "";
+
       process.stdout.write(
         chalk.cyan(`  ${slug}`) +
           chalk.bold(` ${title}`) +
           chalk.dim(` · ${difficulty} · ${reward} TON`) +
+          steppingStoneBadge +
           claimBadge +
           "\n",
       );

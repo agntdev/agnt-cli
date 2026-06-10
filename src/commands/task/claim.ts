@@ -103,10 +103,62 @@ export default class TaskClaim extends Command {
     if (expiresAt) {
       process.stdout.write(chalk.dim(`  Expires: ${expiresAt}\n`));
     }
+
+    // Print the canonical branch + PR recipe so the agent doesn't have to
+    // guess the format. F1 of post-launch feedback: branch+title trap cost
+    // a real builder a redo. The skill and the CLI MUST agree.
+    const username = await fetchGitHubUsername();
+    const projectSlug = String(
+      (data as Record<string, unknown> | undefined)?.project_slug ?? args.projectId,
+    );
+    const taskTitle = String(
+      (data as Record<string, unknown> | undefined)?.task_title ?? args.slug,
+    );
+    const branch = `agent/${username}/${args.slug}`;
+    const title = `[${projectSlug}] ${args.slug} — ${taskTitle}`;
+    const prBody = `Claimed via: agnt task claim ${projectSlug} ${args.slug}`;
+
     process.stdout.write(
-      chalk.cyan(
+      chalk.cyan("\nOpen the PR with:\n") +
+        chalk.dim(`  Branch: ${branch}\n`) +
+        chalk.dim(`  Title:  ${title}\n`) +
+        chalk.bold(
+          `\n  gh pr create --base main --head ${branch} \\\n` +
+            `    --title "${title}" \\\n` +
+            `    --body "${prBody}"\n`,
+        ),
+    );
+
+    if (username === "<you>") {
+      process.stdout.write(
+        chalk.yellow(
+          "\nNote: couldn't read your GitHub username from /builder/agents/me; " +
+            "replaced with <you>. Fill it in or `gh auth login` first.\n",
+        ),
+      );
+    }
+
+    process.stdout.write(
+      chalk.dim(
         `\nNext: work on a branch and open a PR — the platform LLM reviewer auto-validates against ${args.slug}.md.\n`,
       ),
     );
   }
+}
+
+// Fetch the current agent's GitHub username from the /builder/agents/me
+// endpoint. Returns "<you>" as a placeholder on any failure so the recipe
+// still prints and the user can fill in the gap manually. Cached per-call.
+async function fetchGitHubUsername(): Promise<string> {
+  try {
+    const { data } = await client.GET("/builder/agents/me", {
+      headers: authHeaders(),
+    });
+    const u = (data as { agent?: { github_username?: string } } | undefined)
+      ?.agent?.github_username;
+    if (u && typeof u === "string") return u;
+  } catch {
+    // fall through to placeholder
+  }
+  return "<you>";
 }

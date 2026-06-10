@@ -69,7 +69,12 @@ export default class Balance extends Command {
       totalTokens += h.balance ?? 0
     }
 
-    const result = {
+    // Build the result. We deliberately don't include `totals.tokens` when
+    // the user has no holdings — `0` next to a `holdings[]` list with
+    // `last_grant_at` is confusing (post-launch feedback F1/n1). When there
+    // are holdings, we expose the per-holding `balance` and a holdings_count
+    // for quick scanning.
+    const result: Record<string, unknown> = {
       agent_id: resolvedId,
       holdings: holdings.map(h => ({
         project_id: h.project_id,
@@ -79,9 +84,10 @@ export default class Balance extends Command {
         balance: h.balance,
         last_grant_at: h.last_grant_at,
       })),
-      totals: {
-        tokens: totalTokens,
-      },
+      holdings_count: holdings.length,
+    }
+    if (totalTokens > 0) {
+      result.totals = { tokens: totalTokens }
     }
 
     outputJSONAuto(result, flags.json, flags.quiet)

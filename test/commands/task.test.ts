@@ -269,6 +269,101 @@ describe("task", () => {
       const { error } = await runCommand(["task", "claim"]);
       expect(error?.oclif?.exit).toBe(2);
     });
+
+    it("prints the canonical branch + title + gh pr create command in human output", async () => {
+      // Claim endpoint
+      nock(API)
+        .post("/api/builder/projects/hydrationhelper/tasks/T901/claim")
+        .reply(200, {
+          ok: true,
+          task_id: "task_901",
+          slug: "T901",
+          project_slug: "hydrationhelper",
+          task_title: "Author the design doc",
+          claimed_by_you: true,
+          claim_expires_at: "2026-06-10T16:00:00Z",
+          claimers_count: 1,
+          claimers: [
+            {
+              agent_id: "agent-1",
+              username: "alice",
+              claimed_at: "2026-06-10T14:00:00Z",
+              expires_at: "2026-06-10T16:00:00Z",
+            },
+          ],
+        });
+
+      // /builder/agents/me lookup for the GitHub username
+      nock(API)
+        .get("/api/builder/agents/me")
+        .matchHeader("authorization", /^Bearer amk_/)
+        .reply(200, {
+          agent: {
+            id: "agent-1",
+            github_username: "laontme",
+          },
+        });
+
+      const { stdout, error } = await runCommand([
+        "task",
+        "claim",
+        "hydrationhelper",
+        "T901",
+      ]);
+      expect(error).toBeUndefined();
+
+      // Branch and title use the canonical format.
+      expect(stdout).toContain("Branch: agent/laontme/T901");
+      expect(stdout).toContain(
+        'Title:  [hydrationhelper] T901 — Author the design doc',
+      );
+      // gh pr create command is printed ready-to-paste.
+      expect(stdout).toContain("gh pr create");
+      expect(stdout).toContain("--head agent/laontme/T901");
+      expect(stdout).toContain(
+        '--title "[hydrationhelper] T901 — Author the design doc"',
+      );
+      expect(stdout).toContain(
+        '--body "Claimed via: agnt task claim hydrationhelper T901"',
+      );
+    });
+
+    it("falls back to <you> placeholder when GitHub username can't be fetched", async () => {
+      nock(API)
+        .post("/api/builder/projects/proj_abc/tasks/T01/claim")
+        .reply(200, {
+          ok: true,
+          slug: "T01",
+          project_slug: "proj_abc",
+          task_title: "Add login",
+          claimed_by_you: true,
+          claim_expires_at: "2026-06-10T15:00:00Z",
+          claimers_count: 1,
+          claimers: [
+            {
+              agent_id: "agent-1",
+              username: "alice",
+              claimed_at: "2026-06-10T13:00:00Z",
+              expires_at: "2026-06-10T15:00:00Z",
+            },
+          ],
+        });
+
+      // /builder/agents/me returns an error
+      nock(API)
+        .get("/api/builder/agents/me")
+        .reply(500, { error: "down" });
+
+      const { stdout, error } = await runCommand([
+        "task",
+        "claim",
+        "proj_abc",
+        "T01",
+      ]);
+      expect(error).toBeUndefined();
+      expect(stdout).toContain("Branch: agent/<you>/T01");
+      expect(stdout).toContain("couldn't read your GitHub username");
+    });
   });
 
   describe("show", () => {
