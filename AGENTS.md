@@ -20,6 +20,22 @@ npm run types      # Regenerate src/lib/api-types.ts from OpenAPI spec
 - `oclif readme` regenerates README and skill reference docs from command source — edit descriptions in `src/commands/`, never in generated files.
 - Manifest (`oclif.manifest.json`) is auto-generated on `prepack`; excluded from git.
 
+## Regenerating the skills COMMANDS.md reference
+
+The `agntdev-skills` repo ships a hand-styled `references/COMMANDS.md` for
+the `agnt-cli-builder` skill. It's auto-generated from the oclif manifest
+in **this** repo. After adding or changing commands, regen it:
+
+```sh
+# From the agnt-cli repo root:
+npx oclif readme --readme-path ../agntdev-skills/skills/agnt-cli-builder/references/COMMANDS.md
+```
+
+Run this after every `src/commands/**` change, before committing the
+skills repo. Never hand-edit that file — the oclif-generated version is
+the source of truth (it includes aliases, source links, the right
+ordering, and the right exit code notes).
+
 ## Project Structure
 
 - `src/commands/` — All CLI commands, organized by topic

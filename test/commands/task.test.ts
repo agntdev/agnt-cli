@@ -463,6 +463,266 @@ describe("task", () => {
       expect(stdout).toContain("Branch: agent/<you>/T01");
       expect(stdout).toContain("couldn't read your GitHub username");
     });
+
+    it("prints a human-friendly timer (relative + absolute UTC) when claim succeeds", async () => {
+      // expires_at is 2h in the future. The output should read
+      // "in 1h 59m (YYYY-MM-DD HH:MM UTC)" — relative first, then the
+      // absolute UTC in parens, so a builder can verify in a log.
+      const future = new Date(Date.now() + 2 * 60 * 60 * 1000 - 60_000).toISOString();
+      nock(API)
+        .post("/api/builder/projects/proj_abc/tasks/T01/claim")
+        .reply(200, {
+          ok: true,
+          slug: "T01",
+          project_slug: "proj_abc",
+          task_title: "Add login",
+          claimed_by_you: true,
+          claim_expires_at: future,
+          claimers_count: 1,
+          claimers: [
+            {
+              agent_id: "agent-1",
+              username: "alice",
+              claimed_at: new Date().toISOString(),
+              expires_at: future,
+            },
+          ],
+        });
+
+      nock(API)
+        .get("/api/builder/agents/me")
+        .matchHeader("authorization", /^Bearer amk_/)
+        .reply(200, { agent: { id: "agent-1", github_username: "alice" } });
+
+      nock(API)
+        .get("/api/builder/projects/proj_abc/tasks/T01")
+        .reply(200, {
+          task: {
+            slug: "T01",
+            title: "Add login",
+            body_md: "...",
+            status: "open",
+            claimers: [],
+          },
+        });
+
+      const { stdout, error } = await runCommand([
+        "task",
+        "claim",
+        "proj_abc",
+        "T01",
+      ]);
+      expect(error).toBeUndefined();
+      // "Expires:" line carries the relative + absolute pair.
+      // We don't pin the exact minute count (timing-sensitive); we
+      // just check the format and that the absolute UTC suffix is
+      // there.
+      expect(stdout).toMatch(/Expires: in \d+h \d+m \(\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\)/);
+    });
+  });
+
+  describe("claims", () => {
+    beforeEach(() => {
+      saveCredentials({ token: "amk_test", agent_id: "agent-1" });
+    });
+
+    it("lists my active claims across all live projects with expiry timers", async () => {
+      // 1. Who am I
+      nock(API)
+        .get("/api/builder/agents/me")
+        .matchHeader("authorization", /^Bearer amk_/)
+        .reply(200, { agent: { id: "agent-1", github_username: "alice" } });
+
+      // 2. All live projects
+      nock(API)
+        .get("/api/builder/projects?status=live&limit=50")
+        .reply(200, {
+          projects: [
+            { slug: "hydrationhelper", name: "Hydration Helper" },
+            { slug: "barberbook", name: "BarberBook" },
+          ],
+        });
+
+      // 3a. hydrationhelper DAG
+      nock(API)
+        .get("/api/builder/projects/hydrationhelper/dag")
+        .reply(200, {
+          project_slug: "hydrationhelper",
+          current_phase: "dev",
+          tasks: [
+            { slug: "T901" },
+            { slug: "T902" },
+          ],
+        });
+
+      const futureExp = new Date(Date.now() + 90 * 60 * 1000).toISOString();
+      const futureClaimed = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
+      // 3b. T901 is mine (90 min remaining)
+      nock(API)
+        .get("/api/builder/projects/hydrationhelper/tasks/T901")
+        .reply(200, {
+          task: {
+            slug: "T901",
+            title: "Author the design doc",
+            claimers: [
+              {
+                agent_id: "agent-1",
+                username: "alice",
+                claimed_at: futureClaimed,
+                expires_at: futureExp,
+              },
+            ],
+          },
+        });
+
+      // 3c. T902 is NOT mine (bob is on it)
+      nock(API)
+        .get("/api/builder/projects/hydrationhelper/tasks/T902")
+        .reply(200, {
+          task: {
+            slug: "T902",
+            title: "Add water log API",
+            claimers: [
+              { agent_id: "agent-2", username: "bob", claimed_at: "x", expires_at: futureExp },
+            ],
+          },
+        });
+
+      // 4a. barberbook DAG
+      nock(API)
+        .get("/api/builder/projects/barberbook/dag")
+        .reply(200, {
+          project_slug: "barberbook",
+          current_phase: "dev",
+          tasks: [
+            { slug: "T11" },
+          ],
+        });
+
+      // 4b. T11 is also mine (10 min remaining — yellow territory)
+      const soonExp = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      nock(API)
+        .get("/api/builder/projects/barberbook/tasks/T11")
+        .reply(200, {
+          task: {
+            slug: "T11",
+            title: "Set up CI",
+            claimers: [
+              {
+                agent_id: "agent-1",
+                username: "alice",
+                claimed_at: futureClaimed,
+                expires_at: soonExp,
+              },
+            ],
+          },
+        });
+
+      const { stdout, error } = await runCommand([
+        "task",
+        "claims",
+        "--json",
+      ]);
+      expect(error).toBeUndefined();
+
+      const out = JSON.parse(stdout);
+      expect(out.total).toBe(2);
+      // Soonest-expiring first.
+      expect(out.claims[0].taskSlug).toBe("T11");
+      expect(out.claims[1].taskSlug).toBe("T901");
+      // Timer field is preserved.
+      expect(out.claims[0].expiresAtMs).toBeGreaterThan(Date.now());
+      expect(out.claims[0].expiresAtMs).toBeLessThanOrEqual(Date.now() + 11 * 60 * 1000);
+      // Project metadata is captured.
+      expect(out.claims[1].projectSlug).toBe("hydrationhelper");
+      expect(out.claims[1].projectName).toBe("Hydration Helper");
+      expect(out.claims[1].otherClaimers).toEqual([]);
+    });
+
+    it("renders relative timer + absolute UTC in human output", async () => {
+      nock(API)
+        .get("/api/builder/agents/me")
+        .reply(200, { agent: { id: "agent-1", github_username: "alice" } });
+
+      nock(API)
+        .get("/api/builder/projects?status=live&limit=50")
+        .reply(200, {
+          projects: [{ slug: "hydrationhelper", name: "Hydration Helper" }],
+        });
+
+      nock(API)
+        .get("/api/builder/projects/hydrationhelper/dag")
+        .reply(200, {
+          tasks: [{ slug: "T901" }],
+        });
+
+      const futureExp = new Date(Date.now() + 47 * 60 * 1000).toISOString();
+      nock(API)
+        .get("/api/builder/projects/hydrationhelper/tasks/T901")
+        .reply(200, {
+          task: {
+            slug: "T901",
+            title: "Author the design doc",
+            claimers: [
+              {
+                agent_id: "agent-1",
+                username: "alice",
+                claimed_at: new Date().toISOString(),
+                expires_at: futureExp,
+              },
+            ],
+          },
+        });
+
+      const { stdout, error } = await runCommand(["task", "claims"]);
+      expect(error).toBeUndefined();
+      expect(stdout).toContain("T901");
+      expect(stdout).toContain("Author the design doc");
+      expect(stdout).toContain("Hydration Helper");
+      // Relative timer is in the output, paired with the absolute UTC.
+      expect(stdout).toMatch(/in 4[0-9]m \(\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\)/);
+    });
+
+    it("says 'No active claims' when there are none", async () => {
+      nock(API)
+        .get("/api/builder/agents/me")
+        .reply(200, { agent: { id: "agent-1", github_username: "alice" } });
+
+      nock(API)
+        .get("/api/builder/projects?status=live&limit=50")
+        .reply(200, {
+          projects: [{ slug: "hydrationhelper", name: "Hydration Helper" }],
+        });
+
+      nock(API)
+        .get("/api/builder/projects/hydrationhelper/dag")
+        .reply(200, { tasks: [{ slug: "T901" }] });
+
+      nock(API)
+        .get("/api/builder/projects/hydrationhelper/tasks/T901")
+        .reply(200, {
+          task: {
+            slug: "T901",
+            title: "Author the design doc",
+            claimers: [
+              { agent_id: "agent-2", username: "bob", claimed_at: "x", expires_at: "x" },
+            ],
+          },
+        });
+
+      const { stdout, error } = await runCommand(["task", "claims"]);
+      expect(error).toBeUndefined();
+      expect(stdout).toContain("No active claims");
+    });
+
+    it("exits 3 when not authenticated", async () => {
+      const { clearCredentials } = await import("../../src/lib/auth.js");
+      clearCredentials();
+
+      const { error } = await runCommand(["task", "claims"]);
+      expect(error?.oclif?.exit).toBe(3);
+    });
   });
 
   describe("show", () => {

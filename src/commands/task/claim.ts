@@ -3,6 +3,7 @@ import chalk from "chalk";
 
 import { isLoggedIn } from "../../lib/auth.js";
 import { client, authHeaders, tryRecoverAuth } from "../../lib/client.js";
+import { formatTimerWithAbsolute } from "../../lib/format.js";
 import { logAuthError, outputJSON } from "../../lib/output.js";
 import { outputFlags } from "../../lib/flags.js";
 
@@ -101,7 +102,14 @@ export default class TaskClaim extends Command {
       );
     }
     if (expiresAt) {
-      process.stdout.write(chalk.dim(`  Expires: ${expiresAt}\n`));
+      // Human-friendly timer: "in 1h 47m (2026-06-10 16:11 UTC)".
+      // The relative form is what the builder needs at a glance; the
+      // absolute UTC is for the log. Same data as before, just easier
+      // to read in the moment.
+      const expiresMs = Date.parse(expiresAt);
+      process.stdout.write(
+        chalk.dim(`  Expires: ${formatTimerWithAbsolute(expiresMs)}\n`),
+      );
     }
 
     // Print the canonical branch + PR recipe so the agent doesn't have to
