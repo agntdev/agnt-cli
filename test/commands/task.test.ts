@@ -526,97 +526,57 @@ describe("task", () => {
       saveCredentials({ token: "amk_test", agent_id: "agent-1" });
     });
 
-    it("lists my active claims across all live projects with expiry timers", async () => {
-      // 1. Who am I
+    it("lists my active claims with the O(1) /agents/me/claims endpoint", async () => {
+      // Single request — no N+1 fan-out, no per-project DAG walk.
+      // The server's MyClaimItem carries project_slug, task_slug,
+      // task_title, task_status, claimed_at, expires_at, and
+      // open_pr_url. The CLI normalises to its own shape and sorts
+      // soonest-expiring first.
+      const ninetyMinExp = new Date(Date.now() + 90 * 60 * 1000).toISOString();
+      const tenMinExp = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const sixtyMinAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
       nock(API)
-        .get("/api/builder/agents/me")
+        .get("/api/builder/agents/me/claims")
         .matchHeader("authorization", /^Bearer amk_/)
-        .reply(200, { agent: { id: "agent-1", github_username: "alice" } });
-
-      // 2. All live projects
-      nock(API)
-        .get("/api/builder/projects?status=live&limit=50")
         .reply(200, {
-          projects: [
-            { slug: "hydrationhelper", name: "Hydration Helper" },
-            { slug: "barberbook", name: "BarberBook" },
+          count: 3,
+          claims: [
+            {
+              project_id: "p-1",
+              project_slug: "hydrationhelper",
+              task_slug: "T901",
+              task_title: "Author the design doc",
+              task_status: "in_progress",
+              claimed_at: thirtyMinAgo,
+              expires_at: ninetyMinExp,
+              expires_in_seconds: 90 * 60,
+              open_pr_url: null,
+            },
+            {
+              project_id: "p-2",
+              project_slug: "barberbook",
+              task_slug: "T11",
+              task_title: "Set up CI",
+              task_status: "in_progress",
+              claimed_at: sixtyMinAgo,
+              expires_at: tenMinExp,
+              expires_in_seconds: 10 * 60,
+              open_pr_url: null,
+            },
+            {
+              project_id: "p-3",
+              project_slug: "hydrationhelper",
+              task_slug: "T902",
+              task_title: "Add water log API",
+              task_status: "in_review",
+              claimed_at: thirtyMinAgo,
+              expires_at: ninetyMinExp,
+              expires_in_seconds: 90 * 60,
+              open_pr_url: "https://github.com/agntdev/hydrationhelper/pull/142",
+            },
           ],
-        });
-
-      // 3a. hydrationhelper DAG
-      nock(API)
-        .get("/api/builder/projects/hydrationhelper/dag")
-        .reply(200, {
-          project_slug: "hydrationhelper",
-          current_phase: "dev",
-          tasks: [
-            { slug: "T901" },
-            { slug: "T902" },
-          ],
-        });
-
-      const futureExp = new Date(Date.now() + 90 * 60 * 1000).toISOString();
-      const futureClaimed = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-
-      // 3b. T901 is mine (90 min remaining)
-      nock(API)
-        .get("/api/builder/projects/hydrationhelper/tasks/T901")
-        .reply(200, {
-          task: {
-            slug: "T901",
-            title: "Author the design doc",
-            claimers: [
-              {
-                agent_id: "agent-1",
-                username: "alice",
-                claimed_at: futureClaimed,
-                expires_at: futureExp,
-              },
-            ],
-          },
-        });
-
-      // 3c. T902 is NOT mine (bob is on it)
-      nock(API)
-        .get("/api/builder/projects/hydrationhelper/tasks/T902")
-        .reply(200, {
-          task: {
-            slug: "T902",
-            title: "Add water log API",
-            claimers: [
-              { agent_id: "agent-2", username: "bob", claimed_at: "x", expires_at: futureExp },
-            ],
-          },
-        });
-
-      // 4a. barberbook DAG
-      nock(API)
-        .get("/api/builder/projects/barberbook/dag")
-        .reply(200, {
-          project_slug: "barberbook",
-          current_phase: "dev",
-          tasks: [
-            { slug: "T11" },
-          ],
-        });
-
-      // 4b. T11 is also mine (10 min remaining — yellow territory)
-      const soonExp = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      nock(API)
-        .get("/api/builder/projects/barberbook/tasks/T11")
-        .reply(200, {
-          task: {
-            slug: "T11",
-            title: "Set up CI",
-            claimers: [
-              {
-                agent_id: "agent-1",
-                username: "alice",
-                claimed_at: futureClaimed,
-                expires_at: soonExp,
-              },
-            ],
-          },
         });
 
       const { stdout, error } = await runCommand([
@@ -627,89 +587,103 @@ describe("task", () => {
       expect(error).toBeUndefined();
 
       const out = JSON.parse(stdout);
-      expect(out.total).toBe(2);
-      // Soonest-expiring first.
+      expect(out.total).toBe(3);
+      // Soonest-expiring first among un-shipped, shipped at the bottom.
+      // T11 (10m, no PR) sorts before T901 (90m, no PR).
+      // T902 (shipped, PR open) sorts last regardless of timer.
       expect(out.claims[0].taskSlug).toBe("T11");
       expect(out.claims[1].taskSlug).toBe("T901");
-      // Timer field is preserved.
-      expect(out.claims[0].expiresAtMs).toBeGreaterThan(Date.now());
-      expect(out.claims[0].expiresAtMs).toBeLessThanOrEqual(Date.now() + 11 * 60 * 1000);
-      // Project metadata is captured.
+      expect(out.claims[2].taskSlug).toBe("T902");
+      // Server's open_pr_url is preserved as openPrUrl (camelCase).
+      expect(out.claims[0].openPrUrl).toBeNull();
+      expect(out.claims[1].openPrUrl).toBeNull();
+      expect(out.claims[2].openPrUrl).toBe(
+        "https://github.com/agntdev/hydrationhelper/pull/142",
+      );
+      // Project slug comes through (no more projectName — backend
+      // doesn't return it, the CLI normalises to slug-only).
+      expect(out.claims[0].projectSlug).toBe("barberbook");
       expect(out.claims[1].projectSlug).toBe("hydrationhelper");
-      expect(out.claims[1].projectName).toBe("Hydration Helper");
-      expect(out.claims[1].otherClaimers).toEqual([]);
+      // expiresAtMs is parsed from the ISO string.
+      expect(out.claims[0].expiresAtMs).toBeGreaterThan(Date.now());
+      expect(out.claims[0].expiresAtMs).toBeLessThanOrEqual(
+        Date.now() + 11 * 60 * 1000,
+      );
     });
 
-    it("renders relative timer + absolute UTC in human output", async () => {
-      nock(API)
-        .get("/api/builder/agents/me")
-        .reply(200, { agent: { id: "agent-1", github_username: "alice" } });
-
-      nock(API)
-        .get("/api/builder/projects?status=live&limit=50")
-        .reply(200, {
-          projects: [{ slug: "hydrationhelper", name: "Hydration Helper" }],
-        });
-
-      nock(API)
-        .get("/api/builder/projects/hydrationhelper/dag")
-        .reply(200, {
-          tasks: [{ slug: "T901" }],
-        });
-
+    it("renders relative timer + absolute UTC for un-shipped claims", async () => {
       const futureExp = new Date(Date.now() + 47 * 60 * 1000).toISOString();
+      const pastClaimed = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
       nock(API)
-        .get("/api/builder/projects/hydrationhelper/tasks/T901")
+        .get("/api/builder/agents/me/claims")
         .reply(200, {
-          task: {
-            slug: "T901",
-            title: "Author the design doc",
-            claimers: [
-              {
-                agent_id: "agent-1",
-                username: "alice",
-                claimed_at: new Date().toISOString(),
-                expires_at: futureExp,
-              },
-            ],
-          },
+          count: 1,
+          claims: [
+            {
+              project_slug: "hydrationhelper",
+              task_slug: "T901",
+              task_title: "Author the design doc",
+              task_status: "in_progress",
+              claimed_at: pastClaimed,
+              expires_at: futureExp,
+              expires_in_seconds: 47 * 60,
+              open_pr_url: null,
+            },
+          ],
         });
 
       const { stdout, error } = await runCommand(["task", "claims"]);
       expect(error).toBeUndefined();
       expect(stdout).toContain("T901");
       expect(stdout).toContain("Author the design doc");
-      expect(stdout).toContain("Hydration Helper");
-      // Relative timer is in the output, paired with the absolute UTC.
-      expect(stdout).toMatch(/in 4[0-9]m \(\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\)/);
+      expect(stdout).toContain("hydrationhelper");
+      // Relative timer (e.g. "in 46m") is paired with absolute UTC.
+      expect(stdout).toMatch(
+        /in 4[0-9]m \(\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\)/,
+      );
+    });
+
+    it("shows '✓ shipped' + the PR URL when the agent already opened a PR", async () => {
+      // Builder shipped a PR. The claim is decorative now — the timer
+      // is hidden in favour of the green "✓ shipped" badge so the
+      // builder knows nothing is at risk.
+      const futureExp = new Date(Date.now() + 90 * 60 * 1000).toISOString();
+
+      nock(API)
+        .get("/api/builder/agents/me/claims")
+        .reply(200, {
+          count: 1,
+          claims: [
+            {
+              project_slug: "hydrationhelper",
+              task_slug: "T901",
+              task_title: "Author the design doc",
+              task_status: "in_review",
+              claimed_at: new Date().toISOString(),
+              expires_at: futureExp,
+              expires_in_seconds: 90 * 60,
+              open_pr_url:
+                "https://github.com/agntdev/hydrationhelper/pull/142",
+            },
+          ],
+        });
+
+      const { stdout, error } = await runCommand(["task", "claims"]);
+      expect(error).toBeUndefined();
+      expect(stdout).toContain("T901");
+      expect(stdout).toContain("✓ shipped");
+      expect(stdout).toContain(
+        "https://github.com/agntdev/hydrationhelper/pull/142",
+      );
+      // No colour-coded timer line on shipped claims.
+      expect(stdout).not.toMatch(/expires: in \d+m/);
     });
 
     it("says 'No active claims' when there are none", async () => {
       nock(API)
-        .get("/api/builder/agents/me")
-        .reply(200, { agent: { id: "agent-1", github_username: "alice" } });
-
-      nock(API)
-        .get("/api/builder/projects?status=live&limit=50")
-        .reply(200, {
-          projects: [{ slug: "hydrationhelper", name: "Hydration Helper" }],
-        });
-
-      nock(API)
-        .get("/api/builder/projects/hydrationhelper/dag")
-        .reply(200, { tasks: [{ slug: "T901" }] });
-
-      nock(API)
-        .get("/api/builder/projects/hydrationhelper/tasks/T901")
-        .reply(200, {
-          task: {
-            slug: "T901",
-            title: "Author the design doc",
-            claimers: [
-              { agent_id: "agent-2", username: "bob", claimed_at: "x", expires_at: "x" },
-            ],
-          },
-        });
+        .get("/api/builder/agents/me/claims")
+        .reply(200, { count: 0, claims: [] });
 
       const { stdout, error } = await runCommand(["task", "claims"]);
       expect(error).toBeUndefined();
@@ -722,6 +696,14 @@ describe("task", () => {
 
       const { error } = await runCommand(["task", "claims"]);
       expect(error?.oclif?.exit).toBe(3);
+    });
+
+    it("exits 1 on API error", async () => {
+      nock(API)
+        .get("/api/builder/agents/me/claims")
+        .reply(500, { error: "claims lookup failed" });
+      const { error } = await runCommand(["task", "claims"]);
+      expect(error?.oclif?.exit).toBe(1);
     });
   });
 
@@ -773,6 +755,100 @@ describe("task", () => {
       ]);
       expect(error).toBeUndefined();
       expect(stdout).toBe("# Markdown body");
+    });
+
+    it("outputs only spec_body with --spec flag (issue #119 contract)", async () => {
+      // spec_body is the actual contract text extracted from details.md
+      // §-pointers — what the LLM reviewer validates the PR against.
+      // Piping it raw to a file (`agnt task show p T --spec > spec.md`)
+      // is the common case.
+      nock(API)
+        .get("/api/builder/projects/proj_abc/tasks/T01")
+        .reply(200, {
+          task: {
+            slug: "T01",
+            title: "Add login",
+            body_md: "Add login: /login OAuth (§3 in details.md)",
+            spec_body:
+              "## Spec\n\nImplement /login OAuth flow per details.md §3.\n\n" +
+              "Acceptance: redirect URL, token refresh, /me endpoint.",
+            status: "open",
+          },
+        });
+
+      const { stdout, error } = await runCommand([
+        "task",
+        "show",
+        "proj_abc",
+        "T01",
+        "--spec",
+      ]);
+      expect(error).toBeUndefined();
+      // spec_body wins over body_md when --spec is passed.
+      expect(stdout).toContain("## Spec");
+      expect(stdout).toContain("Acceptance: redirect URL");
+      // body_md is suppressed.
+      expect(stdout).not.toContain("§3 in details.md");
+    });
+
+    it("--spec falls back to body_md on older servers (pre-#119)", async () => {
+      // Server predates issue #119: no spec_body field. The CLI
+      // should still produce something useful, not empty.
+      nock(API)
+        .get("/api/builder/projects/proj_abc/tasks/T01")
+        .reply(200, {
+          task: {
+            slug: "T01",
+            title: "Add login",
+            body_md: "# Old server fallback",
+            status: "open",
+          },
+        });
+
+      const { stdout, error } = await runCommand([
+        "task",
+        "show",
+        "proj_abc",
+        "T01",
+        "--spec",
+      ]);
+      expect(error).toBeUndefined();
+      expect(stdout).toBe("# Old server fallback");
+    });
+
+    it("default human output shows spec_body as the headline, body_md as a stub", async () => {
+      // The whole point of spec_body is that it's the real contract.
+      // Default output should lead with it so the builder reads it
+      // first, then show the body_md pointer below for context.
+      nock(API)
+        .get("/api/builder/projects/proj_abc/tasks/T01")
+        .reply(200, {
+          task: {
+            slug: "T01",
+            title: "Add login",
+            body_md: "Short: /login OAuth (§3)",
+            spec_body: "## Full contract text\n\nLots of detail here.",
+            status: "open",
+            claimers: [],
+          },
+        });
+
+      const { stdout, error } = await runCommand([
+        "task",
+        "show",
+        "proj_abc",
+        "T01",
+      ]);
+      expect(error).toBeUndefined();
+      // Title is the heading.
+      expect(stdout).toContain("# Add login");
+      // spec_body is labelled and shown.
+      expect(stdout).toContain("the actual contract");
+      expect(stdout).toContain("## Full contract text");
+      // body_md is shown as a dim stub below.
+      expect(stdout).toContain("Short: /login OAuth (§3)");
+      // JSON tail is included so scripts can parse structured fields.
+      expect(stdout).toContain('"slug": "T01"');
     });
 
     it("exits 4 when not found", async () => {

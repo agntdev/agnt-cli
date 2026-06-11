@@ -1,8 +1,14 @@
 import createClient from "openapi-fetch";
 import type { paths } from "./api-types.js";
-import { getToken, getJwt, loadCredentials, saveCredentials } from "./auth.js";
+import {
+  getToken,
+  getJwt,
+  loadCredentials,
+  saveCredentials,
+} from "./auth.js";
 
 const API_BASE = process.env.AGNT_API_BASE || "https://api.agnt-gm.ai/api";
+export { API_BASE };
 
 export const client = createClient<paths>({ baseUrl: API_BASE });
 
