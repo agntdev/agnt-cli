@@ -108,29 +108,50 @@ export default class TaskClaim extends Command {
     // guess the format. F1 of post-launch feedback: branch+title trap cost
     // a real builder a redo. The skill and the CLI MUST agree.
     //
+    // Head ref format: `OWNER:BRANCH` (e.g. `laontme:agent/laontme/T901`).
+    // `gh pr create --head <branch>` against a forked repo errors with
+    // "Head sha can't be blank" because gh needs to know which fork owns
+    // the head. The `OWNER:BRANCH` form works for both forks and direct
+    // repos. (For direct repos the OWNER must be the repo owner.)
+    //
     // Title format: `[<task-slug>] <task title>`. The platform's PR→task
     // matcher (agnt-api commit 568c0d4) now matches the leading
     // `[<slug>]` against project task slugs directly. Putting the task
     // slug in brackets means the matcher takes the bracket path and we
     // don't have to rely on the T-number regex fallback.
+    //
+    // Task title: fetched via GET /builder/projects/:id/tasks/:slug because
+    // the claim response doesn't carry it. Fallback to the slug only if
+    // the fetch fails (so the recipe always prints).
     const username = await fetchGitHubUsername();
     const projectSlug = String(
       (data as Record<string, unknown> | undefined)?.project_slug ?? args.projectId,
     );
-    const taskTitle = String(
-      (data as Record<string, unknown> | undefined)?.task_title ?? args.slug,
+    // Three-layer fallback for the title so the recipe always prints a
+    // meaningful PR title: (1) follow-up GET /tasks/:slug returns the
+    // canonical title; (2) the claim response may carry `task_title`
+    // directly (older servers); (3) fall back to the slug so the
+    // command line stays valid even on a fully broken API.
+    const embeddedTitle = String(
+      (data as Record<string, unknown> | undefined)?.task_title ?? "",
     );
+    const taskTitle =
+      (await fetchTaskTitle(args.projectId, args.slug)) ||
+      embeddedTitle ||
+      args.slug;
     const branch = `agent/${username}/${args.slug}`;
+    const headRef = username === "<you>" ? branch : `${username}:${branch}`;
     const title = `[${args.slug}] ${taskTitle}`;
     const prBody = `Claimed via: agnt task claim ${projectSlug} ${args.slug}`;
 
     process.stdout.write(
       chalk.cyan("\nOpen the PR with:\n") +
         chalk.dim(`  Branch: ${branch}\n`) +
+        chalk.dim(`  Head:   ${headRef}  (use OWNER:BRANCH for fork+upstream)\n`) +
         chalk.dim(`  Title:  ${title}`) +
         chalk.dim(`   (project: ${projectSlug})\n`) +
         chalk.bold(
-          `\n  gh pr create --base main --head ${branch} \\\n` +
+          `\n  gh pr create --base main --head ${headRef} \\\n` +
             `    --title "${title}" \\\n` +
             `    --body "${prBody}"\n`,
         ),
@@ -140,7 +161,7 @@ export default class TaskClaim extends Command {
       process.stdout.write(
         chalk.yellow(
           "\nNote: couldn't read your GitHub username from /builder/agents/me; " +
-            "replaced with <you>. Fill it in or `gh auth login` first.\n",
+            "replaced with <you>. The recipe will fail until you `gh auth login`.\n",
         ),
       );
     }
@@ -168,4 +189,29 @@ async function fetchGitHubUsername(): Promise<string> {
     // fall through to placeholder
   }
   return "<you>";
+}
+
+// Fetch the real task title via GET /builder/projects/:id/tasks/:slug.
+// The /claim response doesn't carry the title, so a follow-up is
+// required to print a meaningful PR title. Returns an empty string on
+// any failure so the caller can layer its own fallback (embedded
+// `task_title` from the claim response, then the slug).
+async function fetchTaskTitle(
+  projectId: string,
+  slug: string,
+): Promise<string> {
+  try {
+    const { data } = await client.GET(
+      "/builder/projects/{id}/tasks/{slug}",
+      {
+        params: { path: { id: projectId, slug } },
+      },
+    );
+    const title = (data as { task?: { title?: string } } | undefined)?.task
+      ?.title;
+    if (title && typeof title === "string") return title;
+  } catch {
+    // fall through
+  }
+  return "";
 }

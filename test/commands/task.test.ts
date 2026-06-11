@@ -151,6 +151,78 @@ describe("task", () => {
       ]);
       expect(error?.oclif?.exit).toBe(1);
     });
+
+    it("filters to my claims via per-task /tasks/:slug when --mine is set", async () => {
+      // --mine requires auth to know which claims are ours.
+      saveCredentials({ token: "amk_test", agent_id: "agent-1" });
+
+      // /dag returns the full task list
+      const scope = nock(API)
+        .get("/api/builder/projects/proj_abc/dag")
+        .reply(200, {
+          project_slug: "proj_abc",
+          current_phase: "design",
+          phase_status: "active",
+          tasks: [
+            { slug: "T01", title: "Add login", claimable: true },
+            { slug: "T02", title: "Add dashboard", claimable: true },
+          ],
+        });
+
+      // /builder/agents/me resolves the current user
+      nock(API)
+        .get("/api/builder/agents/me")
+        .reply(200, { agent: { id: "agent-1", github_username: "alice" } });
+
+      // T01 is claimed by alice (us) — included
+      nock(API)
+        .get("/api/builder/projects/proj_abc/tasks/T01")
+        .reply(200, {
+          task: {
+            slug: "T01",
+            title: "Add login",
+            status: "open",
+            is_claimed: true,
+            claimers: [
+              { agent_id: "agent-1", username: "alice", claimed_at: "t1", expires_at: "t2" },
+            ],
+          },
+        });
+
+      // T02 is claimed by bob (not us) — excluded
+      nock(API)
+        .get("/api/builder/projects/proj_abc/tasks/T02")
+        .reply(200, {
+          task: {
+            slug: "T02",
+            title: "Add dashboard",
+            status: "open",
+            is_claimed: true,
+            claimers: [
+              { agent_id: "agent-2", username: "bob", claimed_at: "t1", expires_at: "t2" },
+            ],
+          },
+        });
+
+      const { stdout, error } = await runCommand([
+        "task",
+        "list",
+        "proj_abc",
+        "--mine",
+        "--json",
+      ]);
+      expect(error).toBeUndefined();
+      // Sanity: confirm all nock scopes were consumed (i.e. the
+      // follow-up /tasks/:slug calls actually hit the mocks, not
+      // a real API).
+      expect(scope.isDone()).toBe(true);
+
+      const out = JSON.parse(stdout);
+      expect(out.filter).toBe("mine");
+      expect(out.total).toBe(1);
+      expect(out.tasks).toHaveLength(1);
+      expect(out.tasks[0].slug).toBe("T01");
+    });
   });
 
   describe("claim", () => {
@@ -304,6 +376,28 @@ describe("task", () => {
           },
         });
 
+      // /builder/projects/:id/tasks/:slug lookup for the real task title
+      // (the claim response doesn't carry it — the CLI follows up).
+      nock(API)
+        .get("/api/builder/projects/hydrationhelper/tasks/T901")
+        .reply(200, {
+          project_id: "proj_901",
+          project_slug: "hydrationhelper",
+          token_symbol: "HH",
+          task: {
+            id: "task_901",
+            slug: "T901",
+            title: "Author the design doc",
+            body_md: "...",
+            reward_amount: 0,
+            status: "open",
+            created_at: "2026-06-10T14:00:00Z",
+            is_claimed: true,
+            claimers_count: 1,
+            claimers: [],
+          },
+        });
+
       const { stdout, error } = await runCommand([
         "task",
         "claim",
@@ -316,12 +410,17 @@ describe("task", () => {
       // bracket is matched verbatim against project task slugs by the
       // platform's PR→task matcher (agnt-api 568c0d4), so we don't have
       // to rely on the T-number regex fallback.
+      //
+      // Head ref uses OWNER:BRANCH form (`laontme:agent/laontme/T901`)
+      // so `gh pr create` works against a forked repo. The `Head:`
+      // line documents the form for builders hitting "Head sha can't
+      // be blank" errors. (Grug review 2026-06-11.)
       expect(stdout).toContain("Branch: agent/laontme/T901");
       expect(stdout).toContain("Title:  [T901] Author the design doc");
       expect(stdout).toContain("(project: hydrationhelper)");
       // gh pr create command is printed ready-to-paste.
       expect(stdout).toContain("gh pr create");
-      expect(stdout).toContain("--head agent/laontme/T901");
+      expect(stdout).toContain("--head laontme:agent/laontme/T901");
       expect(stdout).toContain('--title "[T901] Author the design doc"');
       expect(stdout).toContain(
         '--body "Claimed via: agnt task claim hydrationhelper T901"',
