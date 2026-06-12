@@ -71,6 +71,17 @@ type DagResponse = {
     status: string;
     claimable?: boolean;
     claim_reason?: string;
+    // claimers[] arrived with #118 (F1 follow-up from
+    // AGNTDEV-POSTLAUNCH-FIXES). Each entry is a brief — username,
+    // avatar, claimed_at, expires_at. The summary render shows the
+    // usernames inline so builders can see who's working on what
+    // without opening a second endpoint.
+    claimers?: Array<{
+      username?: string;
+      agent_id?: string;
+      claimed_at?: string;
+      expires_at?: string;
+    }>;
   }>;
 };
 
@@ -127,6 +138,18 @@ function renderDagSummary(cmd: Command, data: DagResponse): void {
     // so the agent knows the gate without re-running the command.
     if (t.claimable === false && t.claim_reason) {
       out(chalk.dim(`           └─ ${t.claim_reason}`));
+    }
+
+    // If there are active claimers, print them on the next line as a
+    // comma-separated @handle list. Avoids the "who's working on this?"
+    // round-trip to a second endpoint. (#118)
+    if (t.claimers && t.claimers.length > 0) {
+      const handles = t.claimers
+        .map((c) => (c.username ? `@${c.username}` : null))
+        .filter((s): s is string => Boolean(s));
+      if (handles.length > 0) {
+        out(chalk.dim(`           └─ working: ${handles.join(", ")}`));
+      }
     }
   }
   // Reference the cmd param to keep the lint quiet (kept for future

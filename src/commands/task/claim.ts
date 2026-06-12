@@ -74,6 +74,21 @@ export default class TaskClaim extends Command {
       }
       // 409 surface area: phase not active / task not open / not claimable
       // for some other gate reason. Pass the reason through verbatim.
+      // Special case: the chicken-and-egg "phase is failed" message — when
+      // a phase review failed, the platform materializes fix tasks but blocks
+      // claiming them. The escape hatch is to skip the claim entirely and
+      // push a PR whose branch+title match the fix task slug — the platform
+      // matches those automatically. (See agnt-cli-builder SKILL.md,
+      // "When phase is failed and you can't claim anything".)
+      if (/phase (is|has) failed|while the phase is active/i.test(msg)) {
+        const hint =
+          `Phase is failed — fix tasks are unclaimable by design. ` +
+          `Skip the claim and push a PR whose branch = agent/<you>/<fix-slug> ` +
+          `and title = "[<fix-slug>] <title>" — the platform matches ` +
+          `branch+title to the fix task automatically.`;
+        this.error(`Cannot claim: ${msg}\nHint: ${hint}`, { exit: 1 });
+        return;
+      }
       this.error(`Cannot claim: ${msg}`, { exit: 1 });
       return;
     }
