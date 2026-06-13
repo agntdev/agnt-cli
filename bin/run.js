@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
-import {execute} from '@oclif/core'
+// Imported first so the NO_COLOR init runs before any command file
+// pulls in chalk. See src/lib/color.ts for the rationale.
+import "../dist/lib/color.js";
 
-await execute({dir: import.meta.url})
+import { execute } from "@oclif/core";
+
+await execute({ dir: import.meta.url });
