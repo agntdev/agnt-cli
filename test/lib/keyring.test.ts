@@ -30,6 +30,11 @@ import {
 describe("keyring", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // The vitest config sets AGNT_CREDENTIALS_DIR to sandbox tests
+    // away from the developer's real keychain. This file mocks
+    // @napi-rs/keyring and wants to assert the mock is called, so
+    // we must turn the bypass off for these tests.
+    delete process.env.AGNT_CREDENTIALS_DIR;
   });
 
   describe("keyringRead", () => {
