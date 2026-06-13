@@ -1,18 +1,23 @@
-import { Args, Command, Flags } from "@oclif/core";
+import { Args, Command } from "@oclif/core";
 import chalk from "chalk";
 
 import { outputFlags } from "../../lib/flags.js";
-import { outputJSON } from "../../lib/output.js";
+import { outputJSONAuto } from "../../lib/output.js";
 import { client } from "../../lib/client.js";
 
+// Always show spec_body (the real contract). The --spec/--body
+// flags were cut in v0.13.0 — spec_body is the contract, period.
+// body_md is the §-pointer summary and only useful as context
+// inside the default output (shown as a stub below the spec).
+// Why drop the flags: agents cut long outputs. Having three
+// commands worth of spec data in one place is the agent-friendly
+// default. If a builder wants the full JSON, --json gives it.
 export default class TaskShow extends Command {
   static description =
-    "Show task details — spec_body (the real contract) by default, body_md on --body";
+    "Show task details — spec_body (the actual contract) plus metadata";
 
   static examples = [
     "<%= config.bin %> task show proj_abc123 T01",
-    "<%= config.bin %> task show proj_abc123 T01 --spec",
-    "<%= config.bin %> task show proj_abc123 T01 --body",
     "<%= config.bin %> task show proj_abc123 T01 --json",
   ];
 
@@ -26,24 +31,6 @@ export default class TaskShow extends Command {
 
   static flags = {
     ...outputFlags,
-    // --spec outputs the resolved spec_body (the actual contract text
-    // extracted server-side from details.md §-pointers, issue #119).
-    // This is what the LLM reviewer will validate the PR against —
-    // read it carefully.
-    spec: Flags.boolean({
-      char: "s",
-      default: false,
-      description:
-        "Output only the spec_body field (the actual contract, not the §-pointer summary).",
-    }),
-    // --body outputs the short body_md field (the §-pointer summary).
-    // Kept for backward compat — most older servers don't have spec_body.
-    body: Flags.boolean({
-      char: "b",
-      default: false,
-      description:
-        "Output only the body_md field (the §-pointer summary, may be a one-liner).",
-    }),
   };
 
   async run(): Promise<void> {
@@ -69,40 +56,8 @@ export default class TaskShow extends Command {
     const specBody = task?.spec_body ?? "";
     const bodyMd = task?.body_md ?? "";
 
-    // Single-field outputs go to stdout raw (for piping into other
-    // tools — `agnt task show p T --spec > spec.md`).
-    if (flags.spec) {
-      if (specBody) {
-        process.stdout.write(specBody);
-      } else if (bodyMd) {
-        // Older server: spec_body wasn't set. Fall back to body_md so
-        // the flag still produces something useful.
-        process.stdout.write(bodyMd);
-        if (!flags.json) {
-          this.warn(
-            "spec_body not present on this server; fell back to body_md. " +
-              "(Server predates issue #119.)",
-          );
-        }
-      } else {
-        process.stdout.write("");
-      }
-      return;
-    }
-
-    if (flags.body) {
-      process.stdout.write(bodyMd);
-      return;
-    }
-
-    // Default human output: show spec_body (the real contract) as the
-    // headline, then a small body_md stub if present, then the rest of
-    // the task as a JSON tail. The intent is: the agent reads the
-    // spec, the body_md is for context.
     if (!flags.json && !flags.quiet) {
-      process.stdout.write(
-        chalk.bold(`# ${task?.title ?? args.slug}\n\n`),
-      );
+      process.stdout.write(chalk.bold(`# ${task?.title ?? args.slug}\n\n`));
 
       if (specBody) {
         process.stdout.write(
@@ -110,25 +65,36 @@ export default class TaskShow extends Command {
         );
         process.stdout.write(specBody);
         process.stdout.write("\n\n");
+      } else if (bodyMd) {
+        // Older server (pre-#119): no spec_body field. Fall back to
+        // body_md so the agent still has something to read. Don't
+        // warn here — the JSON tail (always emitted below) carries
+        // the real shape; this is just the human-readable view.
+        process.stdout.write(
+          chalk.cyan("## spec (older server — body_md fallback)\n\n"),
+        );
+        process.stdout.write(bodyMd);
+        process.stdout.write("\n\n");
+      } else {
+        process.stdout.write(
+          chalk.dim("(no spec or body content from the server)\n\n"),
+        );
       }
 
-      if (bodyMd && bodyMd !== specBody) {
+      if (bodyMd && bodyMd !== specBody && specBody) {
+        // body_md is the §-pointer summary. Show as a dim stub
+        // below the spec for cross-reference; the spec is the
+        // real contract.
         process.stdout.write(
           chalk.dim("## body_md (short summary / §-pointers)\n\n"),
         );
         process.stdout.write(chalk.dim(bodyMd));
         process.stdout.write("\n\n");
       }
-
-      if (!specBody && !bodyMd) {
-        process.stdout.write(
-          chalk.dim("(no spec or body content from the server)\n\n"),
-        );
-      }
     }
 
-    // Always include the full JSON tail so scripts / agents can read
-    // the structured response (claimers, is_claimed, status, etc.).
-    outputJSON(data, flags.json, flags.quiet);
+    // Always include the full JSON tail so scripts / agents can
+    // parse structured fields (claimers, is_claimed, status, etc.).
+    outputJSONAuto(data, flags.json, flags.quiet);
   }
 }
