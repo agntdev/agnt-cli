@@ -3,7 +3,7 @@ import chalk from "chalk";
 
 import { outputFlags } from "../../lib/flags.js";
 import { outputJSONAuto } from "../../lib/output.js";
-import { client } from "../../lib/client.js";
+import { client, authHeaders, tryRecoverAuth } from "../../lib/client.js";
 
 // Owner escape hatch. POST /phase/advance to skip the failed phase
 // and proceed to the next. C11: with safety gates, no confirm flag.
@@ -144,14 +144,39 @@ export default class PhaseAdvance extends Command {
     }
 
     // 7. POST /phase/advance. New endpoint from backend #142, not
-    // yet in api-types (cast like agnt test does).
-    const { data: advData, error: advError } = await client.POST(
+    // yet in api-types (cast like agnt test does). The router has
+    // AuthMiddleware on this endpoint (the GETs above don't need
+    // it), so we MUST pass authHeaders() — easy to miss in copy-
+    // paste from the GET call above. (Fixed 2026-06-13: the first
+    // cut shipped without the header and surfaced as "missing or
+    // invalid Authorization header".)
+    let { data: advData, error: advError } = await client.POST(
       "/builder/projects/{id}/phase/advance" as never,
       {
+        headers: authHeaders(),
         params: { path: { id: args.projectId } },
         body: { reason: "owner_override" } as never,
       } as never,
     );
+
+    // Older servers may have rotated the key — try to recover with
+    // stored JWT, then retry once. Mirrors task claim's recovery path.
+    if (
+      advError &&
+      (advError as { error?: string }).error === "unauthorized"
+    ) {
+      const recovered = await tryRecoverAuth();
+      if (recovered) {
+        ({ data: advData, error: advError } = await client.POST(
+          "/builder/projects/{id}/phase/advance" as never,
+          {
+            headers: authHeaders(),
+            params: { path: { id: args.projectId } },
+            body: { reason: "owner_override" } as never,
+          } as never,
+        ));
+      }
+    }
 
     if (advError) {
       const errObj = advError as { error?: string; status?: number } | undefined;
@@ -159,10 +184,26 @@ export default class PhaseAdvance extends Command {
       // openapi-fetch surfaces 4xx/5xx errors as `{ error, status }`
       // where `status` is the HTTP code and `error` is the server's
       // error string. Some clients only set `error`, so we also
-      // pattern-match the message.
-      if (errObj?.status === 403 || /forbidden|not.+owner|unauthor/i.test(msg)) {
+      // pattern-match the message. The server returns 401 with body
+      // "missing or invalid Authorization header" when the header is
+      // absent, and 403 with "forbidden / not the owner" when the
+      // agent is authed but isn't the project owner.
+      if (
+        errObj?.status === 403 ||
+        /forbidden|not.+owner|not the owner|not authorized as owner/i.test(msg)
+      ) {
         this.error(
           `Owner authorization required. The CLI's stored agent is not the project owner. ` +
+            `(API: ${msg})`,
+          { exit: 1 },
+        );
+      }
+      if (
+        errObj?.status === 401 ||
+        /unauthor|invalid.+authorization|missing.+authorization/i.test(msg)
+      ) {
+        this.error(
+          `Authentication failed. Try \`agnt login --token <amk_xxx>\` to re-authenticate. ` +
             `(API: ${msg})`,
           { exit: 1 },
         );
