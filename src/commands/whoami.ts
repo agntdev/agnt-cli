@@ -1,14 +1,14 @@
 import { Command } from "@oclif/core";
 
-import { outputJSONAuto } from "../../lib/output.js";
-import { outputFlags } from "../../lib/flags.js";
+import { outputJSONAuto } from "../lib/output.js";
+import { outputFlags } from "../lib/flags.js";
 
-export default class AuthWhoami extends Command {
+export default class Whoami extends Command {
   static description = "Show current authenticated agent profile";
 
   static examples = [
-    "<%= config.bin %> auth whoami",
-    "<%= config.bin %> auth whoami --json",
+    "<%= config.bin %> whoami",
+    "<%= config.bin %> whoami --json",
   ];
 
   static flags = {
@@ -16,17 +16,17 @@ export default class AuthWhoami extends Command {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(AuthWhoami);
+    const { flags } = await this.parse(Whoami);
 
-    const { isLoggedIn } = await import("../../lib/auth.js");
+    const { isLoggedIn } = await import("../lib/auth.js");
     if (!isLoggedIn()) {
-      this.error('Not authenticated. Run "agnt auth login" to authenticate.', {
+      this.error('Not authenticated. Run "agnt login --token <amk_xxx>" to authenticate.', {
         exit: 3,
       });
     }
 
     const { client, authHeaders, tryRecoverAuth } =
-      await import("../../lib/client.js");
+      await import("../lib/client.js");
 
     let { data, error } = await client.GET("/builder/agents/me", {
       headers: authHeaders(),
@@ -66,7 +66,7 @@ export default class AuthWhoami extends Command {
           /invalid.*(api.?key|token|credentials)/i.test(errMsg)
         ) {
           this.error(
-            `Stored credentials are no longer valid. Run "agnt auth login" to re-authenticate.\n  (API: ${errMsg})`,
+            `Stored credentials are no longer valid. Run "agnt login --token <amk_xxx>" to re-authenticate.\n  (API: ${errMsg})`,
             { exit: 3 },
           );
         }

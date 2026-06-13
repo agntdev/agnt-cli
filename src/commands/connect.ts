@@ -78,7 +78,7 @@ export default class Connect extends Command {
 
     const data = (await res.json()) as ClaimResponse;
 
-    // Same store as `agnt auth login` — the delegate key becomes the
+    // Same store as `agnt login` — the delegate key becomes the
     // active credential for every subsequent command.
     const prev: Partial<Credentials> = loadCredentials() ?? {};
     saveCredentials({

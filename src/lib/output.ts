@@ -22,14 +22,7 @@ export function logError(ctx: Command, msg: string, hint?: string): void {
 }
 
 export function logAuthError(ctx: Command): void {
-  ctx.error('Not authenticated. Run "agnt auth login" to authenticate.', {exit: 3})
-}
-
-export function logWalletError(ctx: Command): void {
-  ctx.error(
-    'TON wallet not connected. Run "agnt auth ton" to connect your wallet for rewards.',
-    {exit: 3}
-  )
+  ctx.error('Not authenticated. Run "agnt login --token <amk_xxx>" to authenticate.', {exit: 3})
 }
 
 export function isPiped(): boolean {
