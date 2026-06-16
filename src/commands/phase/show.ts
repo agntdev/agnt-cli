@@ -37,6 +37,7 @@ type PhaseResponse = {
 
 type ProjectResponse = {
   build_mode?: "platform_agent" | "local_agent";
+  build_pipeline?: "phase" | "task_manager";
   [k: string]: unknown;
 };
 
@@ -54,10 +55,29 @@ type Verdict = {
 type RunRecord = {
   id?: string;
   phase?: string;
+  // API field is `opened_at` (see builder_phase_api.go phaseRunDTO).
+  // `run_at` is kept for backwards-compat with older CLI consumers.
   run_at?: string;
+  opened_at?: string;
   verdict?: Verdict;
   [k: string]: unknown;
 };
+
+// M3c (v0.14.0): format elapsed time since a given timestamp.
+// Returns "unknown" if the timestamp can't be parsed, "just now"
+// for <1m, otherwise "Xm" or "Xh Ym". Local helper; no need to
+// import the format module.
+function formatElapsed(sinceIso: string | undefined | null): string {
+  if (!sinceIso) return "unknown";
+  const since = Date.parse(sinceIso);
+  if (Number.isNaN(since)) return "unknown";
+  const minutes = Math.max(0, Math.floor((Date.now() - since) / 60_000));
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const rem = minutes % 60;
+  return rem === 0 ? `${hours}h` : `${hours}h ${rem}m`;
+}
 
 export default class PhaseShow extends Command {
   static description =
@@ -102,19 +122,26 @@ export default class PhaseShow extends Command {
     }
     const phase = (phaseData ?? {}) as PhaseResponse;
 
-    // 2. Get project (for build_mode)
+    // 2. Get project (for build_mode + build_pipeline)
     const { data: projectData } = await client.GET(
       "/builder/projects/{id}",
       { params: { path: { id: args.projectId } } },
     );
     const project = (projectData ?? {}) as ProjectResponse;
     const buildMode = project.build_mode ?? "platform_agent";
+    // M3a (v0.14.0): task_manager projects render a different view.
+    // Older servers don't return build_pipeline; default to "phase".
+    const buildPipeline = project.build_pipeline ?? "phase";
 
     // 3. Get verdict history. Skip for local_agent (always empty by
-    // design — saves a round-trip and avoids confusing the agent
-    // with an empty runs list).
+    // design) and for task_manager (phases don't exist there — saves
+    // a round-trip and avoids confusing the agent with an empty runs list).
     let runs: RunRecord[] = [];
-    if (buildMode !== "local_agent" && phase.current_phase) {
+    if (
+      buildMode !== "local_agent" &&
+      buildPipeline !== "task_manager" &&
+      phase.current_phase
+    ) {
       const { data: runsData } = await client.GET(
         // New endpoint from backend #140, not yet in api-types.
         "/builder/projects/{id}/phases/{phase}/runs" as never,
@@ -135,6 +162,7 @@ export default class PhaseShow extends Command {
       const result: Record<string, unknown> = {
         ...phase,
         build_mode: buildMode,
+        build_pipeline: buildPipeline,
         phase_runs: runs,
       };
       outputJSONAuto(result, true, flags.quiet);
@@ -147,7 +175,60 @@ export default class PhaseShow extends Command {
       return;
     }
 
+    // M3a (v0.14.0): task_manager projects don't have phases. Render
+    // a minimal "DAG status + last feedback" view instead of the
+    // legacy phase view (which would show Phase: — / Status: — / Reviews: 0
+    // and look like the project is broken).
+    if (buildPipeline === "task_manager") {
+      this.renderTaskManager(phase, flags.full);
+      return;
+    }
+
     this.renderSummary(phase, runs, flags.full);
+  }
+
+  // M3a (v0.14.0): task_manager view. No phases, no verdict history.
+  // Show what the agent actually needs: project status, last feedback
+  // (if any), next action. Full DAG adjacency / per-node feedback /
+  // cascade-cancel history are out of scope for v0.14.0 CLI (see
+  // the handoff "Won't fix" section, NF1).
+  private renderTaskManager(phase: PhaseResponse, full: boolean): void {
+    const write = (line: string): void => {
+      process.stdout.write(line + "\n");
+    };
+    write(
+      "Build flow: task_manager (living-DAG; no phases, no verdict history)",
+    );
+    write(
+      `Status:    ${phase.phase_status ?? "—"}  ·  use \`agnt tasks <slug>\` to see the DAG`,
+    );
+    if (phase.next_action) {
+      // M3b: same [platform]/[you] prefix rule as the legacy view.
+      // For task_manager, almost every next_action is the agent's
+      // responsibility (claim, push, register PR), so default to
+      // [you] unless the action is clearly platform-driven.
+      const prefix = isAgentAction(phase.next_action)
+        ? chalk.green("[you]      ")
+        : chalk.yellow("[platform] ");
+      write(`${prefix}Next: ${phase.next_action}`);
+      if (phase.next_action_reason) {
+        write(chalk.dim(`                ${phase.next_action_reason}`));
+      }
+    } else {
+      write(
+        chalk.dim(
+          "Next:      (no action — check `agnt tasks <slug>` for claimable work)",
+        ),
+      );
+    }
+    if (full) {
+      write("");
+      write(
+        chalk.dim(
+          "(--full: nothing more to show; for full DAG adjacency use `agnt tasks <slug>`)",
+        ),
+      );
+    }
   }
 
   // local_agent: verdict history is always empty by design. Show
@@ -188,6 +269,18 @@ export default class PhaseShow extends Command {
     write(
       `Phase: ${phase.current_phase ?? "—"}  ·  Status: ${phase.phase_status ?? "—"}  ·  Reviews: ${runs.length}`,
     );
+
+    // M3c (v0.14.0): show elapsed time since the most recent phase
+    // event (a run opened, a run closed). If no runs exist, skip
+    // the line — we don't have a timestamp to measure from.
+    // The API field is `opened_at`; we read that and fall back to
+    // `run_at` for older CLI consumers.
+    const lastRun = runs.length > 0 ? runs[runs.length - 1] : null;
+    if (lastRun) {
+      const sinceTs = lastRun.opened_at ?? lastRun.run_at;
+      const elapsed = formatElapsed(sinceTs);
+      write(chalk.dim(`In current state: ${elapsed}`));
+    }
 
     if (runs.length > 0) {
       const last = runs[runs.length - 1];
@@ -240,10 +333,46 @@ export default class PhaseShow extends Command {
     }
 
     if (phase.next_action) {
-      write(`Next:   ${phase.next_action}`);
+      // M3b (v0.14.0): prefix the next_action with [platform] or [you]
+      // so the agent knows who is the actor. Heuristic: actions that
+      // start with imperative verbs (claim, open, push, submit, fix,
+      // rebase, run) are the agent's; everything else (awaiting
+      // review, scheduled, deploying) is the platform's. This is
+      // best-effort — the underlying field is free-text.
+      const prefix = isAgentAction(phase.next_action)
+        ? chalk.green("[you]      ")
+        : chalk.yellow("[platform] ");
+      write(`${prefix}Next: ${phase.next_action}`);
       if (phase.next_action_reason) {
-        write(chalk.dim(`        ${phase.next_action_reason}`));
+        write(chalk.dim(`                ${phase.next_action_reason}`));
       }
     }
   }
+}
+
+// M3b (v0.14.0): heuristic for "is this next_action the agent's
+// responsibility?". Returns true for imperative agent-driven verbs,
+// false for platform-driven states. This is best-effort — the
+// underlying field is free-text, so we match on the leading verb
+// and fall back to false (platform) for anything ambiguous.
+function isAgentAction(nextAction: string): boolean {
+  const agentVerbs = [
+    "claim",
+    "open",
+    "push",
+    "submit",
+    "fix",
+    "rebase",
+    "run",
+    "merge",
+    "write",
+    "implement",
+    "add",
+    "update",
+    "edit",
+    "register",
+    "address",
+  ];
+  const lower = nextAction.trim().toLowerCase();
+  return agentVerbs.some((v) => lower.startsWith(v + " ") || lower === v);
 }

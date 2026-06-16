@@ -51,13 +51,32 @@ export default class TaskShow extends Command {
     }
 
     const task = data?.task as
-      | { title?: string; body_md?: string; spec_body?: string }
+      | {
+          title?: string;
+          body_md?: string;
+          spec_body?: string;
+          node_kind?: string;
+        }
       | undefined;
     const specBody = task?.spec_body ?? "";
     const bodyMd = task?.body_md ?? "";
+    // M4 (v0.14.0): render node_kind for task_manager projects so the
+    // agent can see at a glance whether this is a scaffold/feature/
+    // epic/question/review task before claiming. The skill teaches
+    // which kinds are claimable; the CLI just surfaces the value.
+    const nodeKind = task?.node_kind ?? "";
 
     if (!flags.json && !flags.quiet) {
       process.stdout.write(chalk.bold(`# ${task?.title ?? args.slug}\n\n`));
+
+      if (nodeKind) {
+        process.stdout.write(
+          chalk.dim(`Node kind: ${nodeKind}\n`) +
+            chalk.dim(
+              "  (scaffold/feature are claimable; epic/question/review are not — see agnt-cli-builder)\n\n",
+            ),
+        );
+      }
 
       if (specBody) {
         process.stdout.write(
@@ -75,6 +94,16 @@ export default class TaskShow extends Command {
         );
         process.stdout.write(bodyMd);
         process.stdout.write("\n\n");
+      } else if (nodeKind) {
+        // M4 (v0.14.0): task_manager projects legitimately have no
+        // body_md — the per-feature spec is in tests/specs/<slug>.json
+        // and the contract is the per-feature spec, not body_md. Don't
+        // say "no spec"; say "task_manager: no body_md by design".
+        process.stdout.write(
+          chalk.dim(
+            "(no body_md — task_manager projects store the per-feature spec in tests/specs/<slug>.json)\n\n",
+          ),
+        );
       } else {
         process.stdout.write(
           chalk.dim("(no spec or body content from the server)\n\n"),

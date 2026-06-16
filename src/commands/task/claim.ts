@@ -82,8 +82,8 @@ export default class TaskClaim extends Command {
       // "When phase is failed and you can't claim anything".)
       if (/phase (is|has) failed|while the phase is active/i.test(msg)) {
         const hint =
-          `Phase is failed — fix tasks are unclaimable by design. ` +
-          `Skip the claim and push a PR whose branch = agent/<you>/<fix-slug> ` +
+          `Build flow is blocked — fix tasks are unclaimable by design. ` +
+          `Skip the claim and push a PR whose branch = agent/<your-github-handle>/<fix-slug> ` +
           `and title = "[<fix-slug>] <title>" — the platform matches ` +
           `branch+title to the fix task automatically.`;
         this.error(`Cannot claim: ${msg}\nHint: ${hint}`, { exit: 1 });
@@ -131,11 +131,16 @@ export default class TaskClaim extends Command {
     // guess the format. F1 of post-launch feedback: branch+title trap cost
     // a real builder a redo. The skill and the CLI MUST agree.
     //
-    // Head ref format: `OWNER:BRANCH` (e.g. `laontme:agent/laontme/T901`).
-    // `gh pr create --head <branch>` against a forked repo errors with
-    // "Head sha can't be blank" because gh needs to know which fork owns
-    // the head. The `OWNER:BRANCH` form works for both forks and direct
-    // repos. (For direct repos the OWNER must be the repo owner.)
+    // M7 (v0.14.0): we no longer emit OWNER:BRANCH or query /builder/agents/me.
+    // We don't fork on the platform, so plain `--head <branch>` works.
+    // The branch name is `agent/<task-slug>` (the work branch); the agent's
+    // GitHub identity is what `gh auth login` recorded. If a future contributor
+    // forks, they can add `--head <user>:<branch>` themselves.
+    //
+    // M2 (v0.14.0): for `task_manager` projects, the agent must also call
+    // `POST /tasks/:slug/pr` with the PR URL after `gh pr create`, or the
+    // platform doesn't link the PR to the task. We fetch the project once
+    // to learn the build_pipeline, then print the right recipe.
     //
     // Title format: `[<task-slug>] <task title>`. The platform's PR→task
     // matcher (agnt-api commit 568c0d4) now matches the leading
@@ -146,7 +151,6 @@ export default class TaskClaim extends Command {
     // Task title: fetched via GET /builder/projects/:id/tasks/:slug because
     // the claim response doesn't carry it. Fallback to the slug only if
     // the fetch fails (so the recipe always prints).
-    const username = await fetchGitHubUsername();
     const projectSlug = String(
       (data as Record<string, unknown> | undefined)?.project_slug ?? args.projectId,
     );
@@ -162,30 +166,40 @@ export default class TaskClaim extends Command {
       (await fetchTaskTitle(args.projectId, args.slug)) ||
       embeddedTitle ||
       args.slug;
-    const branch = `agent/${username}/${args.slug}`;
-    const headRef = username === "<you>" ? branch : `${username}:${branch}`;
+    const buildPipeline = await fetchProjectBuildPipeline(args.projectId);
+    const branch = `agent/${args.slug}`;
     const title = `[${args.slug}] ${taskTitle}`;
     const prBody = `Claimed via: agnt task claim ${projectSlug} ${args.slug}`;
 
     process.stdout.write(
       chalk.cyan("\nOpen the PR with:\n") +
         chalk.dim(`  Branch: ${branch}\n`) +
-        chalk.dim(`  Head:   ${headRef}  (use OWNER:BRANCH for fork+upstream)\n`) +
         chalk.dim(`  Title:  ${title}`) +
         chalk.dim(`   (project: ${projectSlug})\n`) +
         chalk.bold(
-          `\n  gh pr create --base main --head ${headRef} \\\n` +
+          `\n  gh pr create --base main --head ${branch} \\\n` +
             `    --title "${title}" \\\n` +
             `    --body "${prBody}"\n`,
         ),
     );
 
-    if (username === "<you>") {
+    // M2: task_manager projects need an extra step to register the PR
+    // with the platform. Without it, the platform doesn't know the PR
+    // is for this task. The endpoint exists for legacy projects too
+    // (returns 4xx) but it's a no-op for them, so we only print this
+    // when we're confident the project is task_manager.
+    if (buildPipeline === "task_manager") {
       process.stdout.write(
         chalk.yellow(
-          "\nNote: couldn't read your GitHub username from /builder/agents/me; " +
-            "replaced with <you>. The recipe will fail until you `gh auth login`.\n",
-        ),
+          "\nThis is a task_manager project. After `gh pr create` succeeds, " +
+            "register the PR with the platform:\n",
+        ) +
+          chalk.bold(
+            `  curl -X POST -H "Authorization: Bearer $AGNT_API_KEY" \\\n` +
+              `    ${process.env.AGNT_API_BASE ?? "https://api.agnt-gm.ai/api"}/builder/projects/${args.projectId}/tasks/${args.slug}/pr \\\n` +
+              `    -H "Content-Type: application/json" \\\n` +
+              `    -d '{"pr_url": "https://github.com/<owner>/<repo>/pull/<n>"}'\n`,
+          ),
       );
     }
 
@@ -195,23 +209,6 @@ export default class TaskClaim extends Command {
       ),
     );
   }
-}
-
-// Fetch the current agent's GitHub username from the /builder/agents/me
-// endpoint. Returns "<you>" as a placeholder on any failure so the recipe
-// still prints and the user can fill in the gap manually. Cached per-call.
-async function fetchGitHubUsername(): Promise<string> {
-  try {
-    const { data } = await client.GET("/builder/agents/me", {
-      headers: authHeaders(),
-    });
-    const u = (data as { agent?: { github_username?: string } } | undefined)
-      ?.agent?.github_username;
-    if (u && typeof u === "string") return u;
-  } catch {
-    // fall through to placeholder
-  }
-  return "<you>";
 }
 
 // Fetch the real task title via GET /builder/projects/:id/tasks/:slug.
@@ -237,4 +234,22 @@ async function fetchTaskTitle(
     // fall through
   }
   return "";
+}
+
+// M2 (v0.14.0): fetch the project's build_pipeline so we know whether
+// to print the task_manager PR-registration step. Returns "phase" as
+// the safe default for pre-v0.14.0 servers that don't return the field.
+async function fetchProjectBuildPipeline(projectId: string): Promise<string> {
+  try {
+    const { data } = await client.GET("/builder/projects/{id}", {
+      params: { path: { id: projectId } },
+    });
+    const pipeline = (
+      data as { build_pipeline?: string } | undefined
+    )?.build_pipeline;
+    if (pipeline === "task_manager" || pipeline === "phase") return pipeline;
+  } catch {
+    // fall through
+  }
+  return "phase";
 }
