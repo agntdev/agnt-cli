@@ -1,17 +1,38 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as fs from "node:fs";
 
-// Mock @napi-rs/keyring
-const mockGetPassword = vi.fn();
-const mockSetPassword = vi.fn();
-const mockDeleteCredential = vi.fn();
+// Vitest 4: vi.mock factories are hoisted above imports, so any
+// mock fns they reference must be hoisted too. vi.hoisted is the
+// official way to declare values that are available inside the
+// vi.mock factory. Declaring `const mock = vi.fn()` at top-level
+// would leave the factory capturing a stale reference.
+const { mockGetPassword, mockSetPassword, mockDeleteCredential } = vi.hoisted(
+  () => ({
+    mockGetPassword: vi.fn(),
+    mockSetPassword: vi.fn(),
+    mockDeleteCredential: vi.fn(),
+  }),
+);
 
+// Vitest 4 also requires `mockImplementation` to use a `function`
+// keyword (or class), not an arrow, so the returned mock is
+// constructable — the real `@napi-rs/keyring` `Entry` is called
+// with `new`, and an arrow-fn implementation throws
+// "is not a constructor".
 vi.mock("@napi-rs/keyring", () => ({
-  Entry: vi.fn().mockImplementation((_service: string, account: string) => ({
-    getPassword: () => mockGetPassword(account),
-    setPassword: (val: string) => mockSetPassword(account, val),
-    deleteCredential: () => mockDeleteCredential(account),
-  })),
+  Entry: vi.fn().mockImplementation(function (_service: string, account: string) {
+    return {
+      getPassword: function () {
+        return mockGetPassword(account);
+      },
+      setPassword: function (val: string) {
+        return mockSetPassword(account, val);
+      },
+      deleteCredential: function () {
+        return mockDeleteCredential(account);
+      },
+    };
+  }),
 }));
 
 // Mock node:fs
