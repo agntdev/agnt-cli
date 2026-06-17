@@ -155,17 +155,6 @@ describe("task", () => {
           ],
         });
 
-      // /builder/agents/me lookup for the GitHub username
-      nock(API)
-        .get("/api/builder/agents/me")
-        .matchHeader("authorization", /^Bearer amk_/)
-        .reply(200, {
-          agent: {
-            id: "agent-1",
-            github_username: "laontme",
-          },
-        });
-
       // /builder/projects/:id/tasks/:slug lookup for the real task title
       // (the claim response doesn't carry it — the CLI follows up).
       nock(API)
@@ -201,23 +190,29 @@ describe("task", () => {
       // platform's PR→task matcher (agnt-api 568c0d4), so we don't have
       // to rely on the T-number regex fallback.
       //
-      // Head ref uses OWNER:BRANCH form (`laontme:agent/laontme/T901`)
-      // so `gh pr create` works against a forked repo. The `Head:`
-      // line documents the form for builders hitting "Head sha can't
-      // be blank" errors. (Grug review 2026-06-11.)
-      expect(stdout).toContain("Branch: agent/laontme/T901");
+      // M7 (v0.14.0): we no longer fetch /builder/agents/me or emit
+      // OWNER:BRANCH — the platform doesn't fork, so plain
+      // `--head <branch>` works. The branch is `agent/<task-slug>`.
+      expect(stdout).toContain("Branch: agent/T901");
       expect(stdout).toContain("Title:  [T901] Author the design doc");
       expect(stdout).toContain("(project: hydrationhelper)");
       // gh pr create command is printed ready-to-paste.
       expect(stdout).toContain("gh pr create");
-      expect(stdout).toContain("--head laontme:agent/laontme/T901");
+      expect(stdout).toContain("--head agent/T901");
       expect(stdout).toContain('--title "[T901] Author the design doc"');
       expect(stdout).toContain(
         '--body "Claimed via: agnt task claim hydrationhelper T901"',
       );
     });
 
-    it("falls back to <you> placeholder when GitHub username can't be fetched", async () => {
+    it("emits a plain --head <branch> (no OWNER:BRANCH) — M7 doesn't query /agents/me", async () => {
+      // Regression for M7: the claim recipe must NOT call
+      // /builder/agents/me. We assert the absence of any yellow
+      // "couldn't read your GitHub username" warning, and the branch
+      // line uses the bare `agent/<slug>` form. The /agents/me mock
+      // would never be hit; nock will complain if it is (because
+      // .reply() with no .times() expects exactly 0 hits and the
+      // default is allow-unmatched=false after the fact).
       nock(API)
         .post("/api/builder/projects/proj_abc/tasks/T01/claim")
         .reply(200, {
@@ -238,10 +233,10 @@ describe("task", () => {
           ],
         });
 
-      // /builder/agents/me returns an error
-      nock(API)
-        .get("/api/builder/agents/me")
-        .reply(500, { error: "down" });
+      // If the CLI regresses to M6 behaviour it would hit this
+      // endpoint; we leave it unmocked on purpose so nock flags the
+      // unexpected call.
+      // (No .get("/api/builder/agents/me") mock here.)
 
       const { stdout, error } = await runCommand([
         "task",
@@ -250,8 +245,10 @@ describe("task", () => {
         "T01",
       ]);
       expect(error).toBeUndefined();
-      expect(stdout).toContain("Branch: agent/<you>/T01");
-      expect(stdout).toContain("couldn't read your GitHub username");
+      expect(stdout).toContain("Branch: agent/T01");
+      expect(stdout).toContain("--head agent/T01");
+      expect(stdout).not.toContain("couldn't read your GitHub username");
+      expect(stdout).not.toContain("<you>");
     });
 
     it("prints a human-friendly timer (relative + absolute UTC) when claim succeeds", async () => {
@@ -278,11 +275,6 @@ describe("task", () => {
             },
           ],
         });
-
-      nock(API)
-        .get("/api/builder/agents/me")
-        .matchHeader("authorization", /^Bearer amk_/)
-        .reply(200, { agent: { id: "agent-1", github_username: "alice" } });
 
       nock(API)
         .get("/api/builder/projects/proj_abc/tasks/T01")

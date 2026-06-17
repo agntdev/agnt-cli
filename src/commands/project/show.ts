@@ -125,8 +125,8 @@ export default class ProjectShow extends Command {
     const lines: string[] = [];
     lines.push(`Project: ${chalk.bold(name)} ${chalk.dim(`(${slug})`)}`);
     lines.push(`Status:  ${status}`);
-    lines.push(`Build mode:     ${modeDesc}`);
-    lines.push(chalk.dim(`                ${modeHint}`));
+    lines.push(`Build mode: ${modeDesc}`);
+    lines.push(chalk.dim(`            ${modeHint}`));
     lines.push(`Build pipeline: ${pipelineDesc}`);
     lines.push(chalk.dim(`                ${pipelineHint}`));
     process.stdout.write(lines.join("\n") + "\n");
