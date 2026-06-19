@@ -76,11 +76,21 @@ export default class ProjectShow extends Command {
     }
 
     const project = unwrapProject<ProjectResponse>(data);
+    // build_mode predates v0.14.0; older servers may not return it.
+    // Default to platform_agent for backward compat.
     const buildMode = project.build_mode ?? "platform_agent";
-    // M1: build_pipeline was added in v0.14.0. Older servers don't
-    // return it; default to "phase" (the legacy flow) so the output
-    // stays meaningful for pre-v0.14.0 projects.
-    const buildPipeline = project.build_pipeline ?? "phase";
+    // v0.16.0: build_pipeline was added in v0.14.0 (M1). Pre-v0.16.0
+    // defaulted to "phase" — that was the wrong call. The
+    // v0.15.1 unwrap bug masked the field for months, and the
+    // silent fallback to "phase" told task_manager agents they
+    // were on the legacy flow. Fail loud with a clear upgrade
+    // hint instead.
+    if (project.build_pipeline === undefined) {
+      throw new Error(
+        "server missing build_pipeline — upgrade agnt-api to v0.14.0 or later",
+      );
+    }
+    const buildPipeline = project.build_pipeline;
 
     if (flags.json) {
       // JSON path: pass through, but normalise the two flags so

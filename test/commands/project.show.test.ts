@@ -9,9 +9,30 @@ const API = "https://api.agnt-gm.ai";
 // what the real API ships today. The CLI must unwrap before reading
 // project fields. (Tests for the unwrap helper itself live in
 // test/lib/client.test.ts.)
+//
+// v0.16.0: `build_pipeline` is now REQUIRED. Pre-v0.16.0 silently
+// defaulted to "phase" on missing/undefined — that fallback masked
+// the v0.15.1 unwrap bug for months. Now: if the field is missing,
+// the CLI throws with a clear "upgrade agnt-api to v0.14.0 or later"
+// hint. Tests below pin both paths.
 
 function wrapped(p: Record<string, unknown>) {
   return { project: p, task_count: 7 };
+}
+
+// Most existing tests need a project with both build_mode AND
+// build_pipeline set — the typical current-server response. A few
+// tests intentionally omit one to pin the failure mode.
+function fullProject(overrides: Record<string, unknown> = {}) {
+  return wrapped({
+    id: "proj_abc",
+    slug: "my-project",
+    name: "My Project",
+    status: "live",
+    build_mode: "platform_agent",
+    build_pipeline: "phase",
+    ...overrides,
+  });
 }
 
 describe("project show (v0.15.1: unwrap ProjectDetailResponse)", () => {
@@ -19,13 +40,7 @@ describe("project show (v0.15.1: unwrap ProjectDetailResponse)", () => {
     it("surfaces build_mode: platform_agent in human output", async () => {
       nock(API)
         .get("/api/builder/projects/proj_abc")
-        .reply(200, wrapped({
-          id: "proj_abc",
-          slug: "my-project",
-          name: "My Project",
-          status: "live",
-          build_mode: "platform_agent",
-        }));
+        .reply(200, fullProject({ build_mode: "platform_agent" }));
 
       const { stdout, error } = await runCommand(["project", "show", "proj_abc"]);
       expect(error).toBeUndefined();
@@ -39,13 +54,7 @@ describe("project show (v0.15.1: unwrap ProjectDetailResponse)", () => {
     it("surfaces build_mode: platform_agent in JSON output", async () => {
       nock(API)
         .get("/api/builder/projects/proj_abc")
-        .reply(200, wrapped({
-          id: "proj_abc",
-          slug: "my-project",
-          name: "My Project",
-          status: "live",
-          build_mode: "platform_agent",
-        }));
+        .reply(200, fullProject({ build_mode: "platform_agent" }));
 
       const { stdout, error } = await runCommand([
         "project",
@@ -64,13 +73,7 @@ describe("project show (v0.15.1: unwrap ProjectDetailResponse)", () => {
     it("surfaces build_mode: local_agent in human output", async () => {
       nock(API)
         .get("/api/builder/projects/proj_abc")
-        .reply(200, wrapped({
-          id: "proj_abc",
-          slug: "my-project",
-          name: "My Project",
-          status: "live",
-          build_mode: "local_agent",
-        }));
+        .reply(200, fullProject({ build_mode: "local_agent" }));
 
       const { stdout, error } = await runCommand(["project", "show", "proj_abc"]);
       expect(error).toBeUndefined();
@@ -83,13 +86,7 @@ describe("project show (v0.15.1: unwrap ProjectDetailResponse)", () => {
     it("surfaces build_mode: local_agent in JSON output", async () => {
       nock(API)
         .get("/api/builder/projects/proj_abc")
-        .reply(200, wrapped({
-          id: "proj_abc",
-          slug: "my-project",
-          name: "My Project",
-          status: "live",
-          build_mode: "local_agent",
-        }));
+        .reply(200, fullProject({ build_mode: "local_agent" }));
 
       const { stdout, error } = await runCommand([
         "project",
@@ -111,11 +108,9 @@ describe("project show (v0.15.1: unwrap ProjectDetailResponse)", () => {
     it("renders task_manager correctly (the bug)", async () => {
       nock(API)
         .get("/api/builder/projects/proj_tm")
-        .reply(200, wrapped({
-          id: "proj_tm",
+        .reply(200, fullProject({
           slug: "tm-bot",
           name: "TM Bot",
-          status: "live",
           build_mode: "local_agent",
           build_pipeline: "task_manager",
         }));
@@ -130,12 +125,9 @@ describe("project show (v0.15.1: unwrap ProjectDetailResponse)", () => {
     it("renders phase correctly", async () => {
       nock(API)
         .get("/api/builder/projects/proj_ph")
-        .reply(200, wrapped({
-          id: "proj_ph",
+        .reply(200, fullProject({
           slug: "ph-bot",
           name: "Phase Bot",
-          status: "live",
-          build_mode: "platform_agent",
           build_pipeline: "phase",
         }));
 
@@ -148,11 +140,9 @@ describe("project show (v0.15.1: unwrap ProjectDetailResponse)", () => {
     it("exposes the real project name (was falling back to slug)", async () => {
       nock(API)
         .get("/api/builder/projects/proj_abc")
-        .reply(200, wrapped({
-          id: "proj_abc",
+        .reply(200, fullProject({
           slug: "my-slug",
           name: "My Real Name",
-          status: "live",
         }));
 
       const { stdout, error } = await runCommand(["project", "show", "proj_abc"]);
@@ -166,12 +156,16 @@ describe("project show (v0.15.1: unwrap ProjectDetailResponse)", () => {
   describe("missing build_mode (backward compat)", () => {
     it("defaults to platform_agent when the field is absent", async () => {
       // Older server (pre-#backend-feat) doesn't return build_mode.
+      // build_pipeline IS present (the M1 patch ships it on every
+      // current server), so we don't trigger the fail-loud path.
       nock(API)
         .get("/api/builder/projects/proj_abc")
         .reply(200, wrapped({
           id: "proj_abc",
           slug: "my-project",
+          name: "My Project",
           status: "live",
+          build_pipeline: "phase",
         }));
 
       const { stdout, error } = await runCommand([
@@ -183,6 +177,33 @@ describe("project show (v0.15.1: unwrap ProjectDetailResponse)", () => {
       expect(error).toBeUndefined();
       const out = JSON.parse(stdout);
       expect(out.build_mode).toBe("platform_agent");
+    });
+  });
+
+  // v0.16.0: the v0.15.1 fix removed the silent fallback for
+  // `build_pipeline` — missing field is a real error now. Pin the
+  // behavior: a clear error message pointing at the agnt-api version
+  // the agent needs to upgrade to.
+  describe("missing build_pipeline (v0.16.0 fail-loud)", () => {
+    it("throws with an upgrade hint when the server omits build_pipeline", async () => {
+      nock(API)
+        .get("/api/builder/projects/proj_old")
+        .reply(200, wrapped({
+          id: "proj_old",
+          slug: "old-project",
+          name: "Old Project",
+          status: "live",
+          build_mode: "platform_agent",
+          // build_pipeline intentionally absent
+        }));
+
+      const { error } = await runCommand(["project", "show", "proj_old"]);
+      expect(error).toBeDefined();
+      // The thrown error includes a clear upgrade hint. We test the
+      // message text so future "make this friendlier" edits don't
+      // accidentally remove the actionable guidance.
+      expect(error?.message).toContain("build_pipeline");
+      expect(error?.message).toContain("v0.14.0");
     });
   });
 

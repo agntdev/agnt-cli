@@ -74,6 +74,22 @@ describe("task", () => {
           note: "3 agents are working on this",
         });
 
+      // v0.16.0: claim flow now fetches /builder/projects/{id} to read
+      // build_pipeline (was silent fallback to "phase" in v0.15.1).
+      nock(API)
+        .get("/api/builder/projects/proj_abc")
+        .reply(200, {
+          project: {
+            id: "proj_abc",
+            slug: "proj_abc",
+            name: "Proj",
+            status: "live",
+            build_mode: "platform_agent",
+            build_pipeline: "phase",
+          },
+          task_count: 7,
+        });
+
       const { stdout, error } = await runCommand([
         "task",
         "claim",
@@ -177,6 +193,24 @@ describe("task", () => {
           },
         });
 
+      // v0.16.0: claim flow now fetches /builder/projects/{id} to read
+      // build_pipeline. build_pipeline='phase' here — the task_manager
+      // submit-recipe line is NOT printed for phase projects (only
+      // task_manager).
+      nock(API)
+        .get("/api/builder/projects/hydrationhelper")
+        .reply(200, {
+          project: {
+            id: "proj_901",
+            slug: "hydrationhelper",
+            name: "Hydration Helper",
+            status: "live",
+            build_mode: "platform_agent",
+            build_pipeline: "phase",
+          },
+          task_count: 7,
+        });
+
       const { stdout, error } = await runCommand([
         "task",
         "claim",
@@ -203,6 +237,11 @@ describe("task", () => {
       expect(stdout).toContain(
         '--body "Claimed via: agnt task claim hydrationhelper T901"',
       );
+      // v0.16.0: phase projects do NOT print the task_manager
+      // submit recipe (the curl was replaced with `agnt task submit`,
+      // which is task_manager-only).
+      expect(stdout).not.toContain("agnt task submit");
+      expect(stdout).not.toContain("curl");
     });
 
     it("emits a plain --head <branch> (no OWNER:BRANCH) — M7 doesn't query /agents/me", async () => {
@@ -237,6 +276,22 @@ describe("task", () => {
       // endpoint; we leave it unmocked on purpose so nock flags the
       // unexpected call.
       // (No .get("/api/builder/agents/me") mock here.)
+
+      // v0.16.0: claim flow reads build_pipeline via the project
+      // endpoint.
+      nock(API)
+        .get("/api/builder/projects/proj_abc")
+        .reply(200, {
+          project: {
+            id: "proj_abc",
+            slug: "proj_abc",
+            name: "Proj",
+            status: "live",
+            build_mode: "platform_agent",
+            build_pipeline: "phase",
+          },
+          task_count: 7,
+        });
 
       const { stdout, error } = await runCommand([
         "task",
@@ -288,6 +343,21 @@ describe("task", () => {
           },
         });
 
+      // v0.16.0: claim flow reads build_pipeline.
+      nock(API)
+        .get("/api/builder/projects/proj_abc")
+        .reply(200, {
+          project: {
+            id: "proj_abc",
+            slug: "proj_abc",
+            name: "Proj",
+            status: "live",
+            build_mode: "platform_agent",
+            build_pipeline: "phase",
+          },
+          task_count: 7,
+        });
+
       const { stdout, error } = await runCommand([
         "task",
         "claim",
@@ -300,6 +370,128 @@ describe("task", () => {
       // just check the format and that the absolute UTC suffix is
       // there.
       expect(stdout).toMatch(/Expires: in \d+h \d+m \(\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\)/);
+    });
+
+    // v0.16.0: claim on a task_manager project prints the
+    // `agnt task submit` recipe (was a curl). The project detail
+    // fetch returns build_pipeline='task_manager' so the new branch
+    // is taken.
+    it("prints `agnt task submit` recipe for task_manager projects (replaces curl)", async () => {
+      nock(API)
+        .post("/api/builder/projects/proj_tm/tasks/T01/claim")
+        .reply(200, {
+          ok: true,
+          slug: "T01",
+          project_slug: "proj_tm",
+          task_title: "Add login",
+          claimed_by_you: true,
+          claim_expires_at: "2026-06-10T15:00:00Z",
+          claimers_count: 1,
+          claimers: [],
+        });
+      nock(API)
+        .get("/api/builder/projects/proj_tm/tasks/T01")
+        .reply(200, {
+          task: {
+            slug: "T01",
+            title: "Add login",
+            body_md: "...",
+            status: "open",
+            claimers: [],
+          },
+        });
+      nock(API)
+        .get("/api/builder/projects/proj_tm")
+        .reply(200, {
+          project: {
+            id: "proj_tm",
+            slug: "proj_tm",
+            name: "TM",
+            status: "live",
+            build_mode: "local_agent",
+            build_pipeline: "task_manager",
+          },
+          task_count: 7,
+        });
+
+      const { stdout, error } = await runCommand([
+        "task",
+        "claim",
+        "proj_tm",
+        "T01",
+      ]);
+      expect(error).toBeUndefined();
+      // v0.16.0: curl is gone, replaced by the `agnt task submit` command.
+      expect(stdout).not.toContain("curl");
+      expect(stdout).toContain("agnt task submit proj_tm T01");
+      expect(stdout).toContain("<pr-url>");
+    });
+
+    // v0.16.0: --cancel releases the claim via POST .../cancel. No
+    // /claim call is made, no project fetch, no recipe printed — the
+    // branch is a separate one-liner flow.
+    describe("--cancel", () => {
+      it("releases a claim and prints the green check", async () => {
+        nock(API)
+          .post("/api/builder/projects/proj_abc/tasks/T01/cancel")
+          .matchHeader("authorization", /^Bearer amk_/)
+          .reply(200, { ok: true });
+
+        const { stdout, error } = await runCommand([
+          "task",
+          "claim",
+          "proj_abc",
+          "T01",
+          "--cancel",
+        ]);
+        expect(error).toBeUndefined();
+        expect(stdout).toContain("Released claim");
+        expect(stdout).toContain("proj_abc/T01");
+      });
+
+      it("--cancel exits 4 on not found", async () => {
+        nock(API)
+          .post("/api/builder/projects/proj_abc/tasks/T99/cancel")
+          .reply(404, { error: "task not found" });
+
+        const { error } = await runCommand([
+          "task",
+          "claim",
+          "proj_abc",
+          "T99",
+          "--cancel",
+        ]);
+        expect(error?.oclif?.exit).toBe(4);
+      });
+
+      it("--cancel exits 1 on other API errors", async () => {
+        nock(API)
+          .post("/api/builder/projects/proj_abc/tasks/T01/cancel")
+          .reply(500, { error: "down" });
+
+        const { error } = await runCommand([
+          "task",
+          "claim",
+          "proj_abc",
+          "T01",
+          "--cancel",
+        ]);
+        expect(error?.oclif?.exit).toBe(1);
+      });
+
+      it("--cancel exits 3 when not authenticated", async () => {
+        const { clearCredentials } = await import("../../src/lib/auth.js");
+        clearCredentials();
+
+        const { error } = await runCommand([
+          "task",
+          "claim",
+          "proj_abc",
+          "T01",
+          "--cancel",
+        ]);
+        expect(error?.oclif?.exit).toBe(3);
+      });
     });
   });
 

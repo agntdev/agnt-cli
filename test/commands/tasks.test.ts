@@ -259,4 +259,158 @@ describe("tasks", () => {
       expect(error?.oclif?.exit).toBeGreaterThanOrEqual(1);
     });
   });
+
+  // v0.16.0: --next and --blocked short-circuit the /dag fetch and
+  // hit dedicated endpoints. See the human + JSON rendering tests
+  // below.
+  describe("--next (v0.16.0)", () => {
+    it("returns the recommended task in JSON form", async () => {
+      nock(API)
+        .get("/api/builder/projects/proj_abc/tasks/next")
+        .reply(200, {
+          task: {
+            slug: "T42",
+            title: "Add login",
+            task_kind: "feature",
+          },
+        });
+      const { stdout, error } = await runCommand([
+        "tasks",
+        "proj_abc",
+        "--next",
+        "--json",
+      ]);
+      expect(error).toBeUndefined();
+      const out = JSON.parse(stdout);
+      expect(out.next.slug).toBe("T42");
+      expect(out.next.title).toBe("Add login");
+    });
+
+    it("renders the recommended task in human form", async () => {
+      nock(API)
+        .get("/api/builder/projects/proj_abc/tasks/next")
+        .reply(200, {
+          task: {
+            slug: "T42",
+            title: "Add login",
+            task_kind: "feature",
+          },
+        });
+      const { stdout, error } = await runCommand([
+        "tasks",
+        "proj_abc",
+        "--next",
+      ]);
+      expect(error).toBeUndefined();
+      expect(stdout).toContain("Next task to claim");
+      expect(stdout).toContain("T42");
+      expect(stdout).toContain("Add login");
+      expect(stdout).toContain("agnt task claim proj_abc T42");
+    });
+
+    it("prints a friendly 'no work' message when the platform returns 204", async () => {
+      nock(API)
+        .get("/api/builder/projects/proj_abc/tasks/next")
+        .reply(204);
+      const { stdout, error } = await runCommand([
+        "tasks",
+        "proj_abc",
+        "--next",
+      ]);
+      expect(error).toBeUndefined();
+      expect(stdout).toContain("No recommended next task");
+    });
+
+    it("exits 4 when the project is not found", async () => {
+      nock(API)
+        .get("/api/builder/projects/nope/tasks/next")
+        .reply(404, { error: "not_found" });
+      const { error } = await runCommand(["tasks", "nope", "--next"]);
+      expect(error?.oclif?.exit).toBe(4);
+    });
+  });
+
+  // v0.16.0: --blocked hits an owner-only endpoint on the backend.
+  // Non-owner agents get 403 — we surface that with a clear hint
+  // pointing at the default `agnt tasks` view for builder-side
+  // "what's claimable" info.
+  describe("--blocked (v0.16.0)", () => {
+    it("returns the blocked list in JSON form (for owners)", async () => {
+      nock(API)
+        .get("/api/builder/projects/proj_abc/blocked")
+        .reply(200, {
+          items: [
+            {
+              slug: "Q-1",
+              title: "What color palette?",
+              node_kind: "question",
+              status: "open",
+              blocked_since: "2026-06-19T10:00:00Z",
+            },
+          ],
+        });
+      const { stdout, error } = await runCommand([
+        "tasks",
+        "proj_abc",
+        "--blocked",
+        "--json",
+      ]);
+      expect(error).toBeUndefined();
+      const out = JSON.parse(stdout);
+      expect(out.items).toHaveLength(1);
+      expect(out.items[0].slug).toBe("Q-1");
+    });
+
+    it("renders the blocked list in human form (for owners)", async () => {
+      nock(API)
+        .get("/api/builder/projects/proj_abc/blocked")
+        .reply(200, {
+          items: [
+            {
+              slug: "Q-1",
+              title: "What color palette?",
+              node_kind: "question",
+              status: "open",
+              blocked_since: "2026-06-19T10:00:00Z",
+            },
+          ],
+        });
+      const { stdout, error } = await runCommand([
+        "tasks",
+        "proj_abc",
+        "--blocked",
+      ]);
+      expect(error).toBeUndefined();
+      expect(stdout).toContain("Blocked tasks in proj_abc");
+      expect(stdout).toContain("Q-1");
+      expect(stdout).toContain("What color palette?");
+    });
+
+    it("prints a friendly message when the blocked list is empty", async () => {
+      nock(API)
+        .get("/api/builder/projects/proj_abc/blocked")
+        .reply(200, { items: [] });
+      const { stdout, error } = await runCommand([
+        "tasks",
+        "proj_abc",
+        "--blocked",
+      ]);
+      expect(error).toBeUndefined();
+      expect(stdout).toContain("No blocked tasks");
+    });
+
+    it("hints at the default view on 403 (non-owner agent)", async () => {
+      nock(API)
+        .get("/api/builder/projects/proj_abc/blocked")
+        .reply(403, { error: "forbidden: not the project owner" });
+      const { error } = await runCommand([
+        "tasks",
+        "proj_abc",
+        "--blocked",
+      ]);
+      expect(error?.oclif?.exit).toBe(1);
+      expect(error?.message).toContain("owner-only");
+      expect(error?.message).toContain("agnt tasks proj_abc");
+    });
+  });
 });

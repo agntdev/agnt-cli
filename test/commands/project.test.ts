@@ -59,10 +59,16 @@ describe("project", () => {
 
   describe("show", () => {
     it("returns project by id", async () => {
+      // v0.16.0: build_pipeline is required (was optional pre-v0.16.0).
       nock(API).get("/api/builder/projects/proj_abc").reply(200, {
-        id: "proj_abc",
-        name: "My Project",
-        status: "live",
+        project: {
+          id: "proj_abc",
+          name: "My Project",
+          status: "live",
+          build_mode: "platform_agent",
+          build_pipeline: "phase",
+        },
+        task_count: 7,
       });
 
       const { stdout, error } = await runCommand([

@@ -82,10 +82,43 @@ export default class Tasks extends Command {
       description:
         "Render a compact TTY table (slug, kind, status, claimable, title).",
     }),
+    // v0.16.0: --blocked calls GET /projects/{id}/blocked. NOTE: that
+    // endpoint is owner-only on the backend — non-owner agents will
+    // get 403. For builder-side "what can I claim?" use the default
+    // `agnt tasks` view (per-task claimable + claim_reason).
+    blocked: Flags.boolean({
+      default: false,
+      description:
+        "List only blocked tasks (open question tasks + blocked/failed builds). Owner-only on the backend — non-owners get 403.",
+    }),
+    // v0.16.0: --next calls GET /projects/:id/tasks/next (the
+    // platform's recommendation for what to claim next, given
+    // your agent's review capability and the current DAG state).
+    next: Flags.boolean({
+      default: false,
+      description:
+        "Show the platform-recommended next task to claim. Returns 204 if nothing is available.",
+    }),
   };
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(Tasks);
+
+    // v0.16.0: --next is mutually exclusive with the rest of the
+    // surface (it hits a different endpoint and returns a single
+    // task, not a DAG). Short-circuit before the /dag fetch.
+    if (flags.next) {
+      await this.runNext(args.projectId, flags);
+      return;
+    }
+
+    // v0.16.0: --blocked hits GET /projects/{id}/blocked (owner-only
+    // on the backend — non-owners get 403 and the error message
+    // points them at the default view).
+    if (flags.blocked) {
+      await this.runBlocked(args.projectId, flags);
+      return;
+    }
 
     const { data, error } = await client.GET("/builder/projects/{id}/dag", {
       params: { path: { id: args.projectId } },
@@ -154,6 +187,136 @@ export default class Tasks extends Command {
     }
 
     outputJSONAuto(result, flags.json, flags.quiet);
+  }
+
+  // v0.16.0: --next handler. Calls GET /projects/:id/tasks/next.
+  // Returns 204 (AbortWithStatus) when the platform has no
+  // recommendation. We surface that as a clear "no work right now"
+  // message in human output, and as an empty result in JSON.
+  //
+  // Owner-only? No — this endpoint uses requireProjectExecutor,
+  // which resolves the agent. Builders get their own recommendation.
+  private async runNext(
+    projectId: string,
+    flags: { json: boolean; quiet: boolean; summary: boolean },
+  ): Promise<void> {
+    const { data, error } = await client.GET(
+      "/builder/projects/{id}/tasks/next" as never,
+      { params: { path: { id: projectId } } } as never,
+    );
+    if (error) {
+      const errObj = error as { error?: string } | undefined;
+      if (errObj?.error === "not_found") {
+        this.error(`Project not found: ${projectId}`, { exit: 4 });
+      }
+      this.error(`API error: ${errObj?.error ?? "Unknown"}`, { exit: 1 });
+    }
+    // 204 No Content → data is null/undefined. Treat as "no work".
+    const task = (data as { task?: Record<string, unknown> } | undefined)?.task;
+    if (!task) {
+      if (flags.json || flags.quiet) {
+        outputJSONAuto(
+          { project: projectId, next: null },
+          flags.json,
+          flags.quiet,
+        );
+        return;
+      }
+      process.stdout.write(
+        chalk.dim(
+          `No recommended next task for ${projectId} right now. ` +
+            `Try \`agnt tasks ${projectId}\` for the full list.\n`,
+        ),
+      );
+      return;
+    }
+    if (flags.json || flags.quiet) {
+      outputJSONAuto(
+        { project: projectId, next: task },
+        flags.json,
+        flags.quiet,
+      );
+      return;
+    }
+    const slug = String(task.slug ?? "—");
+    const title = String(task.title ?? "(no title)");
+    const kind = String(task.task_kind ?? task.node_kind ?? "—");
+    process.stdout.write(
+      chalk.green("Next task to claim:\n") +
+        chalk.bold(`  ${slug}`) +
+        chalk.dim(`  (${kind})  ${title}\n`) +
+        chalk.dim(
+          `  Claim with: agnt task claim ${projectId} ${slug}\n`,
+        ),
+    );
+  }
+
+  // v0.16.0: --blocked handler. Calls GET /projects/:id/blocked.
+  // Owner-only on the backend. Non-owners get 403 — we surface that
+  // with a clear hint to use the default `agnt tasks` view, which
+  // shows per-task `claimable` + `claim_reason` for the same info
+  // a builder needs.
+  private async runBlocked(
+    projectId: string,
+    flags: { json: boolean; quiet: boolean; summary: boolean },
+  ): Promise<void> {
+    const { data, error } = await client.GET(
+      "/builder/projects/{id}/blocked" as never,
+      { params: { path: { id: projectId } } } as never,
+    );
+    if (error) {
+      const errObj = error as { error?: string; status?: number } | undefined;
+      const msg = errObj?.error ?? "Unknown";
+      if (errObj?.status === 403 || /forbidden|not.+owner/i.test(msg)) {
+        this.error(
+          `Blocked-list is owner-only on the backend. ` +
+            `For your agent's view of what's claimable right now, ` +
+            `use \`agnt tasks ${projectId}\` (per-task claimable + claim_reason).`,
+          { exit: 1 },
+        );
+        return;
+      }
+      if (errObj?.status === 404 || /not found/i.test(msg)) {
+        this.error(`Project not found: ${projectId}`, { exit: 4 });
+      }
+      this.error(`API error: ${msg}`, { exit: 1 });
+    }
+    const items =
+      (data as { items?: Array<Record<string, unknown>> } | undefined)?.items ?? [];
+    if (flags.json || flags.quiet) {
+      outputJSONAuto(
+        { project: projectId, items },
+        flags.json,
+        flags.quiet,
+      );
+      return;
+    }
+    if (items.length === 0) {
+      process.stdout.write(
+        chalk.dim(`No blocked tasks in ${projectId}.\n`),
+      );
+      return;
+    }
+    process.stdout.write(
+      chalk.yellow(`Blocked tasks in ${projectId}:\n`),
+    );
+    for (const it of items) {
+      const slug = String(it.slug ?? "—");
+      const title = String(it.title ?? "(no title)");
+      const status = String(it.status ?? "—");
+      const kind = String(it.node_kind ?? "—");
+      const since = it.blocked_since
+        ? chalk.dim(`  blocked since: ${String(it.blocked_since)}`)
+        : "";
+      process.stdout.write(
+        `  ${chalk.bold(slug)}  ${chalk.dim(`(${kind})`)}  ${title}  ${chalk.dim(`[${status}]`)}\n${since}\n`,
+      );
+      if (it.warning) {
+        process.stdout.write(
+          chalk.yellow(`    ! ${String(it.warning)}\n`),
+        );
+      }
+    }
   }
 }
 

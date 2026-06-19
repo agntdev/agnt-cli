@@ -1,23 +1,30 @@
-import { Args, Command } from "@oclif/core";
+import { Args, Command, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { isLoggedIn } from "../../lib/auth.js";
-import { client, authHeaders, tryRecoverAuth, unwrapProject } from "../../lib/client.js";
+import { client, authHeaders, tryRecoverAuth } from "../../lib/client.js";
+import { fetchProjectBuildPipeline } from "../../lib/project-pipeline.js";
 import { formatTimerWithAbsolute } from "../../lib/format.js";
 import { logAuthError, outputJSON } from "../../lib/output.js";
 import { outputFlags } from "../../lib/flags.js";
 
 export default class TaskClaim extends Command {
   static description =
-    "Claim a task (advisory, 2h, non-locking). First valid PR wins.";
+    "Claim a task (advisory, 2h, non-locking). First valid PR wins. Pass --cancel to release.";
 
   static examples = [
     "<%= config.bin %> task claim proj_abc123 T01",
     "<%= config.bin %> task claim my-project T01 --json",
+    "<%= config.bin %> task claim my-project T01 --cancel",
   ];
 
   static flags = {
     ...outputFlags,
+    cancel: Flags.boolean({
+      description:
+        "Release the claim instead of claiming (the slug becomes claimable again).",
+      default: false,
+    }),
   };
 
   static args = {
@@ -36,6 +43,57 @@ export default class TaskClaim extends Command {
 
     if (!isLoggedIn()) {
       logAuthError(this);
+      return;
+    }
+
+    // v0.16.0: --cancel releases the claim via POST .../cancel.
+    // Distinct from `agnt task show` (read) and from the
+    // POST /claim flow below. Runs before we touch /claim.
+    if (flags.cancel) {
+      let { data, error } = await client.POST(
+        "/builder/projects/{id}/tasks/{slug}/cancel" as never,
+        {
+          headers: authHeaders(),
+          params: { path: { id: args.projectId, slug: args.slug } },
+        } as never,
+      );
+      if (
+        error &&
+        (error as { error?: string }).error === "unauthorized"
+      ) {
+        const recovered = await tryRecoverAuth();
+        if (recovered) {
+          ({ data, error } = await client.POST(
+            "/builder/projects/{id}/tasks/{slug}/cancel" as never,
+            {
+              headers: authHeaders(),
+              params: { path: { id: args.projectId, slug: args.slug } },
+            } as never,
+          ));
+        }
+      }
+      if (error) {
+        const msg =
+          (error as { error?: string }).error ?? "Unknown";
+        if (/not found/i.test(msg)) {
+          this.error(
+            `Project or task not found: ${args.projectId}/${args.slug}`,
+            { exit: 4 },
+          );
+          return;
+        }
+        this.error(`Failed to release claim: ${msg}`, { exit: 1 });
+        return;
+      }
+      if (flags.json || flags.quiet) {
+        outputJSON(data, flags.json, flags.quiet);
+        return;
+      }
+      process.stdout.write(
+        chalk.green(
+          `✓ Released claim on ${args.projectId}/${args.slug}\n`,
+        ),
+      );
       return;
     }
 
@@ -183,11 +241,9 @@ export default class TaskClaim extends Command {
         ),
     );
 
-    // M2: task_manager projects need an extra step to register the PR
-    // with the platform. Without it, the platform doesn't know the PR
-    // is for this task. The endpoint exists for legacy projects too
-    // (returns 4xx) but it's a no-op for them, so we only print this
-    // when we're confident the project is task_manager.
+    // v0.16.0: replaced the curl with a first-class CLI command.
+    // The agent no longer needs the API key in scope — `agnt task
+    // submit` uses the same auth context as `agnt task claim`.
     if (buildPipeline === "task_manager") {
       process.stdout.write(
         chalk.yellow(
@@ -195,10 +251,10 @@ export default class TaskClaim extends Command {
             "register the PR with the platform:\n",
         ) +
           chalk.bold(
-            `  curl -X POST -H "Authorization: Bearer $AGNT_API_KEY" \\\n` +
-              `    ${process.env.AGNT_API_BASE ?? "https://api.agnt-gm.ai/api"}/builder/projects/${args.projectId}/tasks/${args.slug}/pr \\\n` +
-              `    -H "Content-Type: application/json" \\\n` +
-              `    -d '{"pr_url": "https://github.com/<owner>/<repo>/pull/<n>"}'\n`,
+            `  agnt task submit ${projectSlug} ${args.slug} <pr-url>\n`,
+          ) +
+          chalk.dim(
+            `  (extract the URL from \`gh pr view --json url -q .url\` or paste it manually)\n`,
           ),
       );
     }
@@ -236,22 +292,8 @@ async function fetchTaskTitle(
   return "";
 }
 
-// M2 (v0.14.0): fetch the project's build_pipeline so we know whether
-// to print the task_manager PR-registration step. Returns "phase" as
-// the safe default for pre-v0.14.0 servers that don't return the field.
-async function fetchProjectBuildPipeline(projectId: string): Promise<string> {
-  try {
-    const { data } = await client.GET("/builder/projects/{id}", {
-      params: { path: { id: projectId } },
-    });
-    // v0.15.1: GET /builder/projects/{id} returns a { project, ... }
-    // wrapper (M1 build_pipeline patch). Unwrap so we read the actual
-    // project fields, not the wrapper.
-    const project = unwrapProject<{ build_pipeline?: string }>(data);
-    const pipeline = project.build_pipeline;
-    if (pipeline === "task_manager" || pipeline === "phase") return pipeline;
-  } catch {
-    // fall through
-  }
-  return "phase";
-}
+// v0.16.0: `fetchProjectBuildPipeline` is now in
+// `src/lib/project-pipeline.ts` (shared with the new task_manager
+// write commands). It throws on missing/unknown values instead of
+// silently defaulting to "phase" — the agent sees a real error if
+// the server is misconfigured.

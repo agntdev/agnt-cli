@@ -6,6 +6,73 @@ a major.minor by convention.
 
 ---
 
+## v0.16.0 (2026-06-19) — phase pipeline cut + task_manager write surface
+
+**Big CLI cut.** The phase-pipeline (`agnt phase show`,
+`agnt phase advance`) is gone — the backend routes were deleted in
+agnt-api PR `chore/remove-phase-pipeline` (commit 5fb5530, Jun 19).
+In its place: 5 first-class task_manager write commands + 3 new
+flags + the `phase`-vs-`task_manager` legacy fallback in
+`agnt project show` removed.
+
+**Removed:**
+- `agnt phase show` — backend `GET /phase` + `GET /phases/:phase/runs` deleted
+- `agnt phase advance` — backend `POST /phase/advance` deleted
+- The silent `build_pipeline='phase'` fallback in `agnt project show`
+  (the v0.15.1 unwrap fix revealed the field; pre-v0.16.0 the CLI
+  silently defaulted to `phase` when the field was missing, masking
+  the bug. Now: missing `build_pipeline` throws a clear
+  "upgrade agnt-api to v0.14.0 or later" error.)
+
+**Added — 5 task_manager write commands:**
+- `agnt task submit <p> <s> <pr-url>` — register a PR URL with the
+  platform. Transitions the task to `in_review`. (The recipe at the
+  end of `agnt task claim` now prints this command instead of the
+  old `curl POST /tasks/:slug/pr`.)
+- `agnt task comment <p> <s> "msg"` — persistent note (visible
+  via `agnt task thread`). Add `--body` for longer-form markdown.
+- `agnt task progress <p> <s> "msg"` — ephemeral chat message
+  (prefixed `🔧` in the chat UI).
+- `agnt task clarify <p> <s> "q"` — blocking question. Spawns a
+  Q-task that gates the parent. Idempotent on
+  `sha256(projectId:slug:question).slice(0,16)`.
+- `agnt task thread <p> <s>` — read all comments on a task.
+  Chronological. Always call before posting again to check for
+  owner replies.
+
+**Added — 3 flags:**
+- `agnt task claim <p> <s> --cancel` — release the claim.
+- `agnt tasks <p> --blocked` — owner-only blocked-list (open
+  question tasks + blocked/failed builds). Non-owners get 403
+  with a hint to use the default `agnt tasks` view.
+- `agnt tasks <p> --next` — platform-recommended next task to claim.
+  Returns 204 → "no work right now" if nothing is available.
+
+**Modified:**
+- `agnt project show` — fails loud on missing `build_pipeline`
+  (no more silent fallback). Renders the raw enum value if the
+  field is a value the CLI doesn't recognise.
+- `agnt task claim` — replaces the `curl POST /tasks/:slug/pr` in
+  the task_manager recipe with `agnt task submit`. Adds `--cancel`.
+  The shared `fetchProjectBuildPipeline` + `assertTaskManager`
+  helpers now live in `src/lib/project-pipeline.ts` (used by all
+  5 new commands + the modified claim flow).
+- `agnt tasks` — `--blocked` and `--next` short-circuit the
+  existing `/dag` fetch and hit dedicated endpoints.
+
+**Migration note:** anyone calling `agnt phase show` /
+`agnt phase advance` directly needs to switch to `agnt tasks`
+(read) or `agnt task claim` (workflow). The `agnt-cli-builder`
+skill is updated for v0.16.1 with the new command reference.
+
+**Backend coordination:** ships in lockstep with the agnt-api PR
+`chore/remove-phase-pipeline` (5fb5530). If the agnt-api PR
+review changes the route list, we'll patch in v0.16.1.
+
+**Test count:** 153 → 176 (+23). oxlint + tsc clean.
+
+---
+
 ## v0.15.1 (2026-06-19) — unwrap `ProjectDetailResponse` in 4 commands
 
 **Hotfix.** `GET /builder/projects/{id}` was changed to return a
