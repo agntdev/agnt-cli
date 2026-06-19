@@ -19,6 +19,24 @@ export function authHeaders(): Record<string, string> {
 }
 
 /**
+ * Unwrap a `GET /builder/projects/{id}` response.
+ *
+ * The endpoint returns a `ProjectDetailResponse` wrapper
+ * (added in the M1 build_pipeline patch): `{ project, task_count, ... }`.
+ * Older endpoints and tests still return the project object directly.
+ * This helper accepts both shapes so call sites can read fields without
+ * caring about the wrapping.
+ */
+export function unwrapProject<T = Record<string, unknown>>(
+  data: unknown,
+): T {
+  if (data && typeof data === "object" && "project" in (data as Record<string, unknown>)) {
+    return (data as { project: T }).project;
+  }
+  return (data ?? {}) as T;
+}
+
+/**
  * Try to recover from amk_ key failure using stored JWT.
  * If JWT is still valid, generates a fresh amk_ key and saves it.
  * Returns true if recovery succeeded.

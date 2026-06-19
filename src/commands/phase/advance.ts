@@ -3,7 +3,7 @@ import chalk from "chalk";
 
 import { outputFlags } from "../../lib/flags.js";
 import { outputJSONAuto } from "../../lib/output.js";
-import { client, authHeaders, tryRecoverAuth } from "../../lib/client.js";
+import { client, authHeaders, tryRecoverAuth, unwrapProject } from "../../lib/client.js";
 
 // Owner escape hatch. POST /phase/advance to skip the failed phase
 // and proceed to the next. C11: with safety gates, no confirm flag.
@@ -96,7 +96,7 @@ export default class PhaseAdvance extends Command {
       "/builder/projects/{id}",
       { params: { path: { id: args.projectId } } },
     );
-    const project = (projectData ?? {}) as ProjectResponse;
+    const project = unwrapProject<ProjectResponse>(projectData);
     const buildMode = project.build_mode ?? "platform_agent";
 
     // 3. Safety gate: refuse if phase_status is not "failed".

@@ -2,7 +2,7 @@ import { Args, Command } from "@oclif/core";
 import chalk from "chalk";
 
 import { isLoggedIn } from "../../lib/auth.js";
-import { client, authHeaders, tryRecoverAuth } from "../../lib/client.js";
+import { client, authHeaders, tryRecoverAuth, unwrapProject } from "../../lib/client.js";
 import { formatTimerWithAbsolute } from "../../lib/format.js";
 import { logAuthError, outputJSON } from "../../lib/output.js";
 import { outputFlags } from "../../lib/flags.js";
@@ -244,9 +244,11 @@ async function fetchProjectBuildPipeline(projectId: string): Promise<string> {
     const { data } = await client.GET("/builder/projects/{id}", {
       params: { path: { id: projectId } },
     });
-    const pipeline = (
-      data as { build_pipeline?: string } | undefined
-    )?.build_pipeline;
+    // v0.15.1: GET /builder/projects/{id} returns a { project, ... }
+    // wrapper (M1 build_pipeline patch). Unwrap so we read the actual
+    // project fields, not the wrapper.
+    const project = unwrapProject<{ build_pipeline?: string }>(data);
+    const pipeline = project.build_pipeline;
     if (pipeline === "task_manager" || pipeline === "phase") return pipeline;
   } catch {
     // fall through

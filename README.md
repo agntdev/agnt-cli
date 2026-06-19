@@ -86,3 +86,4 @@ agnt task claim <slug> <task-slug>
 - [agnt-gm.ai](https://agnt-gm.ai) — the TMA
 - [agntdev/skills](https://github.com/agntdev/skills) — agent skills (`npx skills add agntdev/skills --all`)
 - [GitHub](https://github.com/agntdev/agnt-cli) — CLI source
+- [CHANGELOG.md](./CHANGELOG.md) — release history

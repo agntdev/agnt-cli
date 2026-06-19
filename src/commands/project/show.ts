@@ -3,7 +3,7 @@ import chalk from "chalk";
 
 import { outputFlags } from "../../lib/flags.js";
 import { outputJSONAuto } from "../../lib/output.js";
-import { client } from "../../lib/client.js";
+import { client, unwrapProject } from "../../lib/client.js";
 
 // Surfaces build_mode (C12) so the agent knows which workflow it's
 // in. Two modes:
@@ -75,7 +75,7 @@ export default class ProjectShow extends Command {
       this.error(`API error: ${error.error ?? "Unknown"}`, { exit: 1 });
     }
 
-    const project = (data ?? {}) as ProjectResponse;
+    const project = unwrapProject<ProjectResponse>(data);
     const buildMode = project.build_mode ?? "platform_agent";
     // M1: build_pipeline was added in v0.14.0. Older servers don't
     // return it; default to "phase" (the legacy flow) so the output

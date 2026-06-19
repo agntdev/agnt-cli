@@ -3,7 +3,7 @@ import chalk from "chalk";
 
 import { outputFlags } from "../../lib/flags.js";
 import { outputJSONAuto } from "../../lib/output.js";
-import { client } from "../../lib/client.js";
+import { client, unwrapProject } from "../../lib/client.js";
 
 // Phase state + verdict history. C7 (verdict history auto-included,
 // --review flag dropped) and the v0.13.0 default-short-output rule.
@@ -127,7 +127,7 @@ export default class PhaseShow extends Command {
       "/builder/projects/{id}",
       { params: { path: { id: args.projectId } } },
     );
-    const project = (projectData ?? {}) as ProjectResponse;
+    const project = unwrapProject<ProjectResponse>(projectData);
     const buildMode = project.build_mode ?? "platform_agent";
     // M3a (v0.14.0): task_manager projects render a different view.
     // Older servers don't return build_pipeline; default to "phase".
