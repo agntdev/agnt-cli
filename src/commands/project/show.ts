@@ -18,6 +18,9 @@ import { client, unwrapProject } from "../../lib/client.js";
 //   - phase (legacy) — the 6-phase flow, `agnt phase show` works
 //   - task_manager (new) — living-DAG flow, `agnt phase show` renders
 //     a different view, claim==start, requires /tasks/:slug/pr step
+//   - whole_bot (v0.17.0) — fully automated N-pass build driven by the
+//     BuilderWholeBotWorker; no individual tasks, the platform writes
+//     the whole bot against the blueprint
 // Always check build_pipeline first; it determines which commands to use.
 type ProjectResponse = {
   id?: string;
@@ -25,7 +28,7 @@ type ProjectResponse = {
   name?: string;
   status?: string;
   build_mode?: "platform_agent" | "local_agent";
-  build_pipeline?: "phase" | "task_manager";
+  build_pipeline?: "phase" | "task_manager" | "whole_bot";
   [k: string]: unknown;
 };
 
@@ -41,6 +44,8 @@ const BUILD_PIPELINES = {
     "phase (legacy 6-phase flow: general → design → details → dev → tests → published)",
   task_manager:
     "task_manager (new living-DAG flow: claim==start, /tasks/:slug/pr registration, no phases)",
+  whole_bot:
+    "whole_bot (automated N-pass build: BuilderWholeBotWorker drives the whole bot from blueprint; no tasks to claim)",
 } as const;
 
 export default class ProjectShow extends Command {
@@ -130,7 +135,9 @@ export default class ProjectShow extends Command {
     const pipelineHint =
       buildPipeline === "task_manager"
         ? "In task_manager, claim==start; after `gh pr create`, POST /tasks/:slug/pr with the PR URL."
-        : "In phase flow, the LLM reviewer runs after `gh pr create`; wait for the verdict.";
+        : buildPipeline === "whole_bot"
+          ? "In whole_bot, the platform runs the full build automatically (N passes, min 3 / max 6); nothing for an agent to claim here — watch this project's phase/status for completion."
+          : "In phase flow, the LLM reviewer runs after `gh pr create`; wait for the verdict.";
 
     const lines: string[] = [];
     lines.push(`Project: ${chalk.bold(name)} ${chalk.dim(`(${slug})`)}`);

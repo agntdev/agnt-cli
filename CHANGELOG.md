@@ -6,6 +6,46 @@ a major.minor by convention.
 
 ---
 
+## v0.17.0 (2026-06-25) — whole_bot pipeline support
+
+**Goal.** Add `whole_bot` as a third `build_pipeline` value the CLI
+recognises. The platform's BuilderWholeBotWorker (agnt-api #200–#205,
+pivot 06) runs N passes on the WHOLE bot per project — there's
+nothing for a per-task agent to claim, and a bare assertion failure
+on `whole_bot` projects was the worst possible UX.
+
+**Why now.** Whole-bot is no longer dormant. New projects
+(when `BUILDER_WHOLE_BOT_ENABLED` is set on the platform) are
+stamped with `build_pipeline: whole_bot` and live in `PhaseBuilding`
+until the loop converges (min 3 / max 6 passes, reward split
+pool/K per merged pass at publish). The CLI used to throw
+"unknown pipeline — upgrade agnt-api?" on every such project.
+
+**Changes:**
+
+- `src/lib/project-pipeline.ts` — `BuildPipeline` type now
+  includes `"whole_bot"`. `fetchProjectBuildPipeline` accepts it
+  (no longer throws). `assertTaskManager` returns a pipeline-
+  specific message: `whole_bot` projects get pointed at
+  `agnt project show <id>` (the platform drives the loop).
+- `src/commands/project/show.ts` — `BUILD_PIPELINES` map gets a
+  `whole_bot` entry; `ProjectResponse.build_pipeline` type accepts
+  it; human output adds a `whole_bot` hint explaining that nothing
+  is claimable here.
+- All five task_manager write commands (`submit`, `comment`,
+  `progress`, `clarify`, `thread`) and `task claim` automatically
+  benefit — they all go through `assertTaskManager`. Behaviour
+  unchanged for `task_manager` / `phase` projects.
+
+**Out of scope:** pass-state endpoint, whole-bot-specific CLI
+commands. The whole-bot loop worker handles the lifecycle; nothing
+for the CLI to drive. Deferred until the platform exposes
+per-project pass info via API.
+
+**Pair:** `agnt-cli@0.17.0` + `v0.17.0` skills (cut in lockstep).
+
+---
+
 ## v0.16.0 (2026-06-19) — phase pipeline cut + task_manager write surface
 
 **Big CLI cut.** The phase-pipeline (`agnt phase show`,

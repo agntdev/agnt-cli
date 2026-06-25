@@ -93,6 +93,25 @@ describe("task submit (v0.16.0: register PR URL with platform)", () => {
     expect(error?.message).toContain("task_manager-only");
   });
 
+  // v0.17.0: whole_bot is the third "this isn't task_manager" reason.
+  // The error should point the agent at `agnt project show` (the platform
+  // drives the loop; no individual tasks to claim).
+  it("refuses to run on a whole_bot project (v0.17.0)", async () => {
+    mockProject("proj_wb", "whole_bot");
+
+    const { error } = await runCommand([
+      "task",
+      "submit",
+      "proj_wb",
+      "T01",
+      "https://github.com/owner/repo/pull/1",
+    ]);
+    expect(error).toBeDefined();
+    expect(error?.message).toContain("task_manager-only");
+    expect(error?.message).toContain("whole_bot");
+    expect(error?.message).toContain("agnt project show");
+  });
+
   it("exits 4 when project or task not found", async () => {
     mockProject("proj_abc", "task_manager");
     nock(API)

@@ -137,6 +137,43 @@ describe("project show (v0.15.1: unwrap ProjectDetailResponse)", () => {
       expect(stdout).toContain("legacy 6-phase flow");
     });
 
+    // v0.17.0: whole_bot is the third pipeline. Automated N-pass build,
+    // no individual tasks to claim. Render should mention the worker and
+    // the no-claim hint so an agent doesn't try to claim on this project.
+    it("renders whole_bot correctly", async () => {
+      nock(API)
+        .get("/api/builder/projects/proj_wb")
+        .reply(200, fullProject({
+          slug: "wb-bot",
+          name: "Whole Bot",
+          build_pipeline: "whole_bot",
+        }));
+
+      const { stdout, error } = await runCommand(["project", "show", "proj_wb"]);
+      expect(error).toBeUndefined();
+      expect(stdout).toContain("Build pipeline: whole_bot");
+      expect(stdout).toContain("BuilderWholeBotWorker");
+      expect(stdout).toContain("automated");
+      // Hint should explicitly say nothing is claimable.
+      expect(stdout).toContain("nothing for an agent to claim");
+    });
+
+    it("exposes build_pipeline=whole_bot in JSON output", async () => {
+      nock(API)
+        .get("/api/builder/projects/proj_wb")
+        .reply(200, fullProject({ build_pipeline: "whole_bot" }));
+
+      const { stdout, error } = await runCommand([
+        "project",
+        "show",
+        "proj_wb",
+        "--json",
+      ]);
+      expect(error).toBeUndefined();
+      const out = JSON.parse(stdout);
+      expect(out.build_pipeline).toBe("whole_bot");
+    });
+
     it("exposes the real project name (was falling back to slug)", async () => {
       nock(API)
         .get("/api/builder/projects/proj_abc")
