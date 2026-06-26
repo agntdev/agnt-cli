@@ -107,7 +107,7 @@ export default class Connect extends Command {
             : ""
         }`,
         "",
-        `  Next: agnt task list ${data.project.slug}`,
+        `  Next: agnt project show ${data.project.slug}`,
         "",
       ].join("\n") + "\n",
     );

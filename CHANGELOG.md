@@ -6,6 +6,84 @@ a major.minor by convention.
 
 ---
 
+## v0.18.0 (2026-06-25) — whole_bot only (drop task_manager + phase + TON)
+
+**MINOR** cut that mirrors the upstream agnt-api removals: the
+backend is whole_bot-only now (agnt-api #240, #242, #233, #244),
+the task_manager + phase pipelines are gone, TON economy is gone,
+deploy is free, and the cloud agent is paid for from the mini-app.
+The CLI slims down to that surface.
+
+**Removed (whole_bot-only mode):**
+
+- `agnt task *` (8 commands: claim, claims, clarify, comment,
+  progress, show, submit, thread) — task_manager is gone. Use
+  `agnt project chat` for project chat or `agnt project feedback`
+  to ship an update to a built whole_bot.
+- `agnt tasks <slug>` — the DAG endpoint (`/projects/:id/dag`) is
+  gone; whole_bot projects have no per-task DAG by design.
+- `agnt ready` — the `GET /builder/tasks` endpoint is gone; there
+  is no task pool to browse. Agents are routed in via a connect
+  code (`agnt connect`) and read the project's blueprint.
+- `agnt test <slug> <task>` — the dry-run reviewer called
+  `/builder/projects/:id/tasks/:slug/preview-review`, a task_manager
+  route deleted in agnt-api #240. No replacement: whole_bot
+  validation runs inline on PR open (build-gate + completeness
+  review + tests gate). Local validation lives in the bot's own
+  `npm test`, which the publish gate mirrors.
+- `lib/project-pipeline.ts` — no more `BuildPipeline` enum (whole_bot
+  is the only value stamped on new projects, legacy rows still
+  carry `phase` / `task_manager` and the CLI renders a "(legacy)"
+  hint).
+- TON / TON pool / `ton_reward` flag references — TON economy is
+  gone. The 10★ Telegram Stars payment for cloud-agent assignment
+  stays (paid by the owner from the mini-app; the CLI does NOT
+  touch payment).
+
+**Modified:**
+
+- `src/commands/project/show.ts` — whole_bot-only label. The
+  `BUILD_PIPELINES` map is gone; `pipelineHint` no longer branches
+  on task_manager / phase. The build_mode hint is the only thing
+  that distinguishes local_agent (you build per docs/blueprint.md
+  and open a PR) from platform_agent (cloud agent drives; watch
+  via build_progress).
+- `src/commands/connect.ts` — the "Next:" hint now points at
+  `agnt project show <slug>` (was `agnt task list <slug>`).
+
+**Added (whole_bot owner surface):**
+
+- `agnt project blueprint <slug>` — `GET /projects/:id/quality/blueprint`.
+  Reads the build spec the platform wrote during finalizeWholeBot.
+  For local_agent projects this IS your build spec; read it before
+  you touch any code.
+- `agnt project rebuild <slug> --yes` — `POST /projects/:id/rebuild`.
+  Owner retry for a failed whole_bot (agnt-api #229). Refuses
+  without `--yes`; 409 if not a failed whole_bot or no repo.
+- `agnt project chat <slug>` — project chat (agnt-api builder_chat.go).
+  - `chat start <idea>` → POST /chat (drafts a new project)
+  - `chat <slug>`       → GET  /projects/:id/chat/messages (poll)
+  - `chat <slug> <msg>` → POST /projects/:id/chat/messages (send)
+  Post-draft the chat carries BUILD LOGS, not ideas — to change
+  a finished bot, use `project feedback` instead.
+- `agnt project build-mode <slug> --mode local_agent|platform_agent` —
+  `PUT /projects/:id/build-mode`. Switch the driver. Does NOT
+  deploy a cloud agent (owner does that from the mini-app, 10★).
+- `agnt project feedback <slug> <text>` — `POST /projects/:id/feedback`.
+  The "Ship an update" entry (agnt-api #239 + agnt-gm.ai #76/#78).
+  Enqueues an update round; the next pass's prompt carries the
+  owner's ask forward. 409 if a build is already running.
+- `agnt project pause <slug> --on|--off` — `PUT /projects/:id/bot/pause`.
+  Owner pause/resume toggle.
+
+**Test count:** 180 → 122 (removed ~50 task / phase / DAG tests; added
+~50 new whole_bot command tests + restructured project.show tests
+to drop the task_manager + phase branches).
+
+**Pair:** `agnt-cli@0.18.0` + `v0.18.0` skills.
+
+---
+
 ## v0.17.1 (2026-06-25) — whole_bot hint: local_agent vs platform_agent
 
 **Patch.** v0.17.0's `whole_bot` pipeline label was correct but

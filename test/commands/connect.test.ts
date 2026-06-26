@@ -35,7 +35,7 @@ describe("connect", () => {
     expect(error).toBeUndefined();
     expect(stdout).toContain("Connected");
     expect(stdout).toContain("barberbook");
-    expect(stdout).toContain("agnt task list barberbook");
+    expect(stdout).toContain("agnt project show barberbook");
 
     const creds = loadCredentials();
     expect(creds?.token).toBe("amk_delegate123");
