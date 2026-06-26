@@ -1,6 +1,6 @@
 {
   "name": "@agntdev/cli",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "description": "Builder-only CLI for the agntdev bot-building pipeline. Discover claimable work, inspect task DAGs, claim a task, dry-run review, ship a PR, get paid.",
   "author": "AGNT <https://github.com/agntdev>",
   "contributors": [

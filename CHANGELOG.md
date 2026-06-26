@@ -6,6 +6,41 @@ a major.minor by convention.
 
 ---
 
+## v0.17.1 (2026-06-25) — whole_bot hint: local_agent vs platform_agent
+
+**Patch.** v0.17.0's `whole_bot` pipeline label was correct but
+the hint message was actively misleading on the most common
+configuration: `build_pipeline: whole_bot` + `build_mode: local_agent`.
+On that combination, **the agent IS the one who builds the bot** —
+agnt-api #208 added the local-agent path (platform gates/reviews/
+publishes the owner's PRs; the `BuilderWholeBotWorker` only scans
+projects with a cloud agent or `build_mode=local_agent`). v0.17.0's
+hint said "nothing for an agent to claim here — watch this project's
+phase/status" which sent agents straight to the Step 1.5 exit ramp
+when they should have been cloning the repo.
+
+**Changes:**
+
+- `src/commands/project/show.ts` — `BUILD_PIPELINES.whole_bot`
+  label shortens to "N-pass build against docs/blueprint.md; check
+  build_mode below for who builds" (avoids mis-implying "platform
+  always builds"). The pipeline hint now branches on `build_mode`:
+  - `local_agent`: "YOU build the whole bot per docs/blueprint.md,
+    open a PR; platform gates/reviews/publishes."
+  - `platform_agent`: "the platform cloud agent builds the whole bot
+    automatically; watch via build_progress."
+
+**Tests:** replaced the v0.17.0 "renders whole_bot correctly" test
+with a `describe` block that pins both branches. 180/180 pass.
+
+**Pair:** `agnt-cli@0.17.1` + `v0.17.1` skills (cut in lockstep).
+Skill side: corrected the "If you see `build_pipeline: whole_bot`"
+section in `agnt-cli-builder/SKILL.md` to teach agents to actually
+build the bot on `local_agent` projects (with the one-pass build
+flow: clone, read blueprint, ship a PR).
+
+---
+
 ## v0.17.0 (2026-06-25) — whole_bot pipeline support
 
 **Goal.** Add `whole_bot` as a third `build_pipeline` value the CLI

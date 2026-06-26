@@ -137,25 +137,44 @@ describe("project show (v0.15.1: unwrap ProjectDetailResponse)", () => {
       expect(stdout).toContain("legacy 6-phase flow");
     });
 
-    // v0.17.0: whole_bot is the third pipeline. Automated N-pass build,
-    // no individual tasks to claim. Render should mention the worker and
-    // the no-claim hint so an agent doesn't try to claim on this project.
-    it("renders whole_bot correctly", async () => {
-      nock(API)
-        .get("/api/builder/projects/proj_wb")
-        .reply(200, fullProject({
-          slug: "wb-bot",
-          name: "Whole Bot",
-          build_pipeline: "whole_bot",
-        }));
+    // v0.17.1: whole_bot has TWO drivers (decided by build_mode). The render
+    // must surface the pipeline label + a hint that points the agent at the
+    // correct "what to do" branch (build it yourself vs. platform builds it).
+    describe("whole_bot (v0.17.1: build_mode distinguishes the driver)", () => {
+      it("renders whole_bot + local_agent as YOU build it", async () => {
+        nock(API)
+          .get("/api/builder/projects/proj_wb")
+          .reply(200, fullProject({
+            slug: "wb-bot",
+            name: "Whole Bot",
+            build_mode: "local_agent",
+            build_pipeline: "whole_bot",
+          }));
 
-      const { stdout, error } = await runCommand(["project", "show", "proj_wb"]);
-      expect(error).toBeUndefined();
-      expect(stdout).toContain("Build pipeline: whole_bot");
-      expect(stdout).toContain("BuilderWholeBotWorker");
-      expect(stdout).toContain("automated");
-      // Hint should explicitly say nothing is claimable.
-      expect(stdout).toContain("nothing for an agent to claim");
+        const { stdout, error } = await runCommand(["project", "show", "proj_wb"]);
+        expect(error).toBeUndefined();
+        expect(stdout).toContain("Build pipeline: whole_bot");
+        expect(stdout).toContain("N-pass build against docs/blueprint.md");
+        // Hint must point the agent at the work, not away from it.
+        expect(stdout).toContain("YOU build the whole bot");
+        expect(stdout).toContain("docs/blueprint.md");
+      });
+
+      it("renders whole_bot + platform_agent as platform builds it", async () => {
+        nock(API)
+          .get("/api/builder/projects/proj_wb_cloud")
+          .reply(200, fullProject({
+            slug: "wb-cloud",
+            name: "Cloud Whole Bot",
+            build_mode: "platform_agent",
+            build_pipeline: "whole_bot",
+          }));
+
+        const { stdout, error } = await runCommand(["project", "show", "proj_wb_cloud"]);
+        expect(error).toBeUndefined();
+        expect(stdout).toContain("Build pipeline: whole_bot");
+        expect(stdout).toContain("platform cloud agent");
+      });
     });
 
     it("exposes build_pipeline=whole_bot in JSON output", async () => {
