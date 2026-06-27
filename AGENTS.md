@@ -17,8 +17,11 @@ npm run prepack    # Regenerate oclif manifest + skill references
 npm run types      # Regenerate src/lib/api-types.ts from OpenAPI spec
 ```
 
-- `oclif readme` regenerates README and skill reference docs from command source — edit descriptions in `src/commands/`, never in generated files.
 - Manifest (`oclif.manifest.json`) is auto-generated on `prepack`; excluded from git.
+- The local `README.md` is hand-edited — the v0.19.0 cut dropped the
+  `oclif readme` command tree from it. Agents use the skills; humans
+  use `--help`. If you add a command, update the intro paragraph
+  in README and the CHANGELOG, but don't regen a command table.
 
 ## Regenerating the skills COMMANDS.md reference
 

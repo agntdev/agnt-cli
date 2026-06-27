@@ -4,6 +4,66 @@ CLI release history. `@agntdev/cli` follows semver. The skill bundle
 (`agntdev/skills`) and the CLI are versioned independently but share
 a major.minor by convention.
 
+## v0.19.0 (2026-06-27) — drop chat, build-mode, pause, feedback (operator-in-session model)
+
+**MINOR** cut. The skill bundle ships at v0.19.0 alongside this;
+the two are paired but versioned independently.
+
+**Commands removed (four):**
+
+- `agnt project chat` — creator concern (TMA / mini-app), not
+  builder. Builder reads the project via `agnt project show`;
+  owners interact with the chat in the mini-app only.
+- `agnt project build-mode` — local_agent / platform_agent split
+  no longer surfaced. Running both cloud and local on the same
+  project is a user-fault scenario; the CLI doesn't expose a
+  knob to switch modes.
+- `agnt project pause` — owner-only. Pause / resume lives in
+  the mini-app; builders don't pause or resume projects mid-pass.
+- `agnt project feedback` — operator steers the agent **in the
+  LLM session** (Claude Code / Claude.ai / similar), not via an
+  out-of-band CLI command. Cloud agent has no operator at all;
+  local agent's operator types feedback to the LLM directly.
+  Async owner → bot change requests stay on the mini-app's
+  `FeedbackComposer` (POST /builder/projects/:id/feedback) — the
+  API endpoint is untouched, only the CLI wrapper goes away.
+
+**`agnt project show` output trimmed:**
+
+The human output no longer renders the `Build mode:` line or
+the mode-specific hint (`YOU build the whole bot` /
+`cloud agent drives the build`). The field is still in the
+JSON response for backward compat with any existing scripts, but
+the agent doesn't branch on it.
+
+```
+$ agt project show my-bot
+Project: My Project (my-bot)
+Status:  building
+Pipeline: whole_bot (N-pass build against docs/blueprint.md; you
+            build the bot and ship a PR, platform gates/reviews/
+            publishes)
+```
+
+**Final command surface (v0.19.0):**
+
+```
+agnt connect <code>            # link via one-time mini-app code
+agnt login --token <key>       # headless: paste a key
+agnt logout
+agnt whoami
+
+agnt project list --status live
+agnt project show <slug>            # status + pipeline + build_progress
+agnt project blueprint <slug>       # the spec you build against
+agnt project rebuild <slug> --yes   # retry a failed whole_bot
+
+agnt bot show <slug>            # post-publish bot identity + @username
+agnt bot logs <slug> [--tail N] # download build log (when deploy fails)
+```
+
+**Pair:** `@agntdev/cli@0.19.0` + `v0.19.0` skills.
+
 ---
 
 ## v0.18.0 (2026-06-25) — whole_bot only (drop task_manager + phase + TON)

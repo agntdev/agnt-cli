@@ -11,12 +11,10 @@ import { client, authHeaders } from "../../lib/client.js";
 // during finalizeWholeBot, but it ALSO mirrors it here so the
 // agent can read the spec without cloning the repo first.
 //
-// For local_agent projects, the blueprint IS your build spec.
-// Read it before you touch any code; it enumerates every entry
-// point, flow, data entity, integration, edge case, and required
-// test the bot must cover. See the agt-cli-builder skill ("If
-// you see build_pipeline: whole_bot + build_mode: local_agent")
-// for the full one-pass build flow.
+// The blueprint IS your build spec. Read it before you touch any
+// code; it enumerates every entry point, flow, data entity,
+// integration, edge case, and required test the bot must cover.
+// See the agnt-cli-builder skill for the full one-pass build flow.
 
 type BlueprintResponse = {
   blueprint?: string;
