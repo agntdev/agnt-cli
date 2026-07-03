@@ -89,7 +89,7 @@ export default class ProjectShow extends Command {
     const status = project.status ?? "—";
     const pipelineDesc =
       buildPipeline === "whole_bot"
-        ? "whole_bot (N-pass build against docs/blueprint.md; you build the bot and ship a PR, platform gates/reviews/publishes)"
+        ? "whole_bot (one-pass build → live; refine via chat)"
         : `${buildPipeline} (legacy — server still carries this from a pre-v0.18.0 row; expected whole_bot)`;
 
     const lines: string[] = [];

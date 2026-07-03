@@ -4,6 +4,28 @@ CLI release history. `@agntdev/cli` follows semver. The skill bundle
 (`agntdev/skills`) and the CLI are versioned independently but share
 a major.minor by convention.
 
+## v0.19.1 (2026-07-02) — structured blueprint + one-pass description
+
+**PATCH.** Two fixes:
+
+- **`project show`**: updated pipeline description from "N-pass build
+  against docs/blueprint.md" to "one-pass build → live; refine via
+  chat" — matches the current platform model (agnt-api #273).
+
+- **`project blueprint`**: rewritten to handle the structured API
+  response. The endpoint no longer returns `{ blueprint: "..." }` —
+  it returns `{ project_id, archetype, title, summary,
+  completeness_score, content: { entry_points, flows, data_entities,
+  integrations, edge_cases, ... }, missing_fields, assumptions }`.
+  Human output now renders entry points, flows, data entities,
+  integrations, edge cases, assumptions, and a color-coded
+  completeness percentage. `--json` passes through the full
+  structured response. Tests updated to match.
+
+**Pair:** `@agntdev/cli@0.19.1` + `v0.19.3` skills.
+
+---
+
 ## v0.19.0 (2026-06-27) — drop chat, build-mode, pause, feedback (operator-in-session model)
 
 **MINOR** cut. The skill bundle ships at v0.19.0 alongside this;
